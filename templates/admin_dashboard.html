@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Admin Dashboard — ProctorAI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#1261ab;--dark:#0a3d6b;--bg:#f0f4f8;--surface:#fff;--text:#1a2332;--muted:#546e7a;--border:#c8d6e0;--green:#2e7d32;--red:#d32f2f;--orange:#e65100;--purple:#7c3aed;--shadow:0 2px 12px rgba(18,97,171,.1)}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh}
+.layout{display:flex;min-height:100vh}
+/* SIDEBAR */
+.sidebar{width:230px;background:var(--dark);flex-shrink:0;display:flex;flex-direction:column}
+.sb-logo{padding:1.3rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo h2{color:#fff;font-size:1rem;font-weight:700}
+.sb-logo p{color:rgba(255,255,255,.45);font-size:.68rem;margin-top:.2rem}
+.sb-nav{padding:.8rem 0;flex:1}
+.sb-item{display:flex;align-items:center;gap:.65rem;padding:.7rem 1.3rem;color:rgba(255,255,255,.6);font-size:.82rem;cursor:pointer;transition:all .2s;border-left:3px solid transparent;border-radius:0}
+.sb-item:hover,.sb-item.active{background:rgba(255,255,255,.08);color:#fff;border-left-color:#0078d4}
+.sb-footer{padding:.8rem;border-top:1px solid rgba(255,255,255,.1)}
+.sb-user{color:rgba(255,255,255,.55);font-size:.73rem;margin-bottom:.5rem}
+.sb-logout{width:100%;padding:.45rem;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.18);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.74rem;cursor:pointer}
+.sb-logout:hover{background:rgba(255,0,0,.2)}
+/* MAIN */
+.main-content{flex:1;overflow:auto}
+.main-header{background:#fff;border-bottom:2px solid var(--border);padding:0 1.8rem;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:var(--shadow)}
+.mh-title{font-size:1rem;font-weight:700;color:var(--text)}
+.mh-actions{display:flex;gap:.5rem}
+.btn{padding:.45rem 1rem;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:600;cursor:pointer;transition:all .2s;border:1.5px solid}
+.btn-primary{background:var(--blue);color:#fff;border-color:var(--blue)}.btn-primary:hover{background:var(--dark)}
+.btn-ghost{background:#fff;color:var(--text);border-color:var(--border)}.btn-ghost:hover{border-color:var(--blue);color:var(--blue)}
+.btn-green{background:var(--green);color:#fff;border-color:var(--green)}.btn-green:hover{background:#1b5e20}
+.btn-purple{background:var(--purple);color:#fff;border-color:var(--purple)}
+/* TABS */
+.page-tabs{display:flex;border-bottom:2px solid var(--border);background:#fff;padding:0 1.8rem}
+.page-tab{padding:.65rem 1rem;font-size:.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px}
+.page-tab.active{color:var(--blue);border-color:var(--blue)}
+.tab-panel{display:none;padding:1.5rem 1.8rem}.tab-panel.active{display:block}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.8rem;margin-bottom:1.5rem}
+.stat-card{background:#fff;border-radius:10px;border:1.5px solid var(--border);padding:1rem;box-shadow:var(--shadow)}
+.sc-val{font-family:'DM Mono',monospace;font-size:1.8rem;font-weight:700;line-height:1}
+.sc-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.25rem}
+/* TABLE */
+.table-card{background:#fff;border-radius:12px;border:1.5px solid var(--border);overflow:hidden;box-shadow:var(--shadow);margin-bottom:1.2rem}
+.table-header{padding:.9rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-header h3{font-size:.88rem;font-weight:700;color:var(--text)}
+table{width:100%;border-collapse:collapse}
+th{background:#f8f9ff;padding:.6rem .85rem;text-align:left;font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid var(--border);white-space:nowrap}
+td{padding:.6rem .85rem;font-size:.8rem;border-bottom:1px solid #f0f4f8;color:var(--text);white-space:nowrap}
+tr:hover td{background:#f8fbff}tr:last-child td{border-bottom:none}
+.badge{display:inline-block;padding:.18rem .55rem;border-radius:20px;font-size:.67rem;font-weight:700}
+.badge-active{background:#e3f2fd;color:#1565c0}
+.badge-submitted{background:#e8f5e9;color:#2e7d32}
+.badge-terminated{background:#ffebee;color:#d32f2f}
+.badge-expired{background:#fff3e0;color:#e65100}
+.risk-chip{display:inline-block;padding:.12rem .45rem;border-radius:4px;font-size:.67rem;font-weight:700;font-family:'DM Mono',monospace}
+.risk-low{background:#e8f5e9;color:#2e7d32}.risk-med{background:#fff3e0;color:#e65100}.risk-high{background:#ffebee;color:#d32f2f}.risk-crit{background:#d32f2f;color:#fff}
+.tbl-btn{padding:.22rem .6rem;border-radius:5px;border:1px solid var(--border);background:#fff;font-size:.7rem;font-weight:600;cursor:pointer;color:var(--blue)}
+.tbl-btn:hover{background:var(--blue);color:#fff;border-color:var(--blue)}
+/* SEARCH */
+.search-row{display:flex;gap:.7rem;margin-bottom:1.2rem;align-items:center;flex-wrap:wrap}
+.search-input{flex:1;min-width:200px;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:#fff;color:var(--text)}
+.search-input:focus{outline:none;border-color:var(--blue)}
+/* INVITE PANEL */
+.invite-box{background:#fff;border-radius:12px;border:1.5px solid var(--border);padding:1.3rem;margin-bottom:1.2rem;box-shadow:var(--shadow)}
+.invite-box h3{font-size:.9rem;font-weight:700;color:var(--text);margin-bottom:1rem}
+.inv-form{display:grid;grid-template-columns:1fr 1fr auto;gap:.6rem;align-items:end;margin-bottom:.8rem}
+.inv-field label{font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em}
+.inv-field input{width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:#fff;color:var(--text)}
+.inv-field input:focus{outline:none;border-color:var(--blue)}
+.bulk-area{width:100%;font-family:'DM Mono',monospace;font-size:.8rem;border:1.5px solid var(--border);border-radius:7px;padding:.55rem .75rem;resize:vertical;min-height:100px;outline:none;color:var(--text);background:#fff}
+.bulk-area:focus{border-color:var(--purple)}
+.inv-result-row{display:flex;align-items:center;gap:.5rem;padding:.35rem .6rem;border-radius:6px;font-size:.78rem;margin-bottom:.25rem}
+.inv-result-row.ok{background:#e8f5e9;color:#1b5e20}
+.inv-result-row.err{background:#ffebee;color:#b71c1c}
+.prov-card{border:2px solid var(--border);border-radius:8px;padding:.5rem .6rem;cursor:pointer;text-align:center;transition:all .2s;background:#fff}
+.prov-card:hover{border-color:var(--blue);background:#eff6ff}
+.prov-card.active{border-color:var(--blue);background:#eff6ff;box-shadow:0 0 0 3px rgba(18,97,171,.12)}
+.link-copy{font-family:'DM Mono',monospace;font-size:.68rem;background:#f3f4f6;padding:.1rem .35rem;border-radius:4px;cursor:pointer;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-copy:hover{background:#e5e7eb}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:90%;max-width:660px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.modal-hdr{padding:1.2rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:1}
+.modal-hdr h2{font-size:.95rem;font-weight:700;color:var(--text)}
+.modal-close{background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)}
+.modal-body{padding:1.3rem}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:1rem}
+.dg-item{background:#f8f9ff;border:1px solid #dde6f5;border-radius:7px;padding:.7rem}
+.dg-lbl{font-size:.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.18rem}
+.dg-val{font-size:.88rem;font-weight:600;color:var(--text);font-family:'DM Mono',monospace}
+.ss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.ss-img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:5px;border:1px solid var(--border);cursor:pointer}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(18,97,171,.2);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:2.5rem;color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-logo"><h2>ProctorAI</h2><p>Admin Proctoring Portal</p></div>
+    <div class="sb-nav">
+      <div class="sb-item active" onclick="showTab('dashboard')">📊 Dashboard</div>
+      <div class="sb-item" onclick="showTab('sessions')">👤 Exam Sessions</div>
+      <div class="sb-item" onclick="showTab('invites-list')">📋 Invite History</div>
+      <div class="sb-item" onclick="showTab('questions')">📚 Question Bank</div>
+      <div class="sb-item" onclick="showTab('settings')">⚙️ Settings</div>
+      <div class="sb-item" onclick="exportExcel()">📥 Export Excel</div>
+    </div>
+    <div class="sb-footer">
+      <div class="sb-user">Logged in as: <strong style="color:#fff">{{ admin_user }}</strong></div>
+      <button class="sb-logout" onclick="window.location.href='/admin/logout'">← Logout</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="main-header">
+      <div class="mh-title" id="mainTitle">📊 Dashboard</div>
+      <div class="mh-actions">
+        <button class="btn btn-ghost" onclick="refresh()">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <div class="page-tabs">
+      <div class="page-tab active" id="ptab-dashboard" onclick="showTab('dashboard')">Dashboard</div>
+      <div class="page-tab" id="ptab-sessions" onclick="showTab('sessions')">Sessions</div>
+      <div class="page-tab" id="ptab-invites-list" onclick="showTab('invites-list')">Invite History</div>
+      <div class="page-tab" id="ptab-questions" onclick="showTab('questions')">Question Bank</div>
+      <div class="page-tab" id="ptab-settings" onclick="showTab('settings')">⚙️ Settings</div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div class="tab-panel active" id="panel-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="sc-val" style="color:var(--blue)" id="st-total">—</div><div class="sc-lbl">Total Sessions</div></div>
+        <div class="stat-card"><div class="sc-val" style="color:#1565c0" id="st-active">—</div><div class="sc-lbl">Active Now</div></div>
+        <div class="stat-card"><div class="sc-val" style="color:var(--green)" id="st-submitted">—</div><div class="sc-lbl">Submitted</div></div>
+        <div class="stat-card"><div class="sc-val" style="color:var(--red)" id="st-flagged">—</div><div class="sc-lbl">Flagged</div></div>
+        <div class="stat-card"><div class="sc-val" style="color:#b91c1c" id="st-terminated">—</div><div class="sc-lbl">Terminated</div></div>
+        <div class="stat-card"><div class="sc-val" style="color:var(--blue)" id="st-avgscore">—</div><div class="sc-lbl">Avg Score</div></div>
+      </div>
+      <div id="dashTableWrap"><div class="empty"><span class="spin"></span>Loading…</div></div>
+    </div>
+
+    <!-- SESSIONS TAB -->
+    <div class="tab-panel" id="panel-sessions">
+      <div class="search-row">
+        <input class="search-input" id="searchInput" type="text" placeholder="🔍 Search by name or email…" oninput="filterSessions()"/>
+        <button class="btn btn-primary" onclick="loadSessions()">Search</button>
+        <span style="font-size:.75rem;color:var(--muted)" id="resultCount"></span>
+      </div>
+      <div id="sessTableWrap"><div class="empty"><span class="spin"></span>Loading…</div></div>
+    </div>
+
+    <!-- INVITE HISTORY TAB -->
+    <div class="tab-panel" id="panel-invites-list">
+      <div id="inviteHistoryWrap"><div class="empty"><span class="spin"></span>Loading…</div></div>
+    </div>
+
+    <!-- QUESTION BANK TAB -->
+    <div class="tab-panel" id="panel-questions">
+      <div id="qbankWrap"><div class="empty"><span class="spin"></span>Loading…</div></div>
+    </div>
+
+    <!-- SETTINGS TAB -->
+    <div class="tab-panel" id="panel-settings">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem">
+
+        <!-- EMAIL SETTINGS -->
+        <div class="invite-box">
+          <h3>📧 Email Settings</h3>
+
+          <!-- PROVIDER SELECTOR WITH RECOMMENDATION BADGE -->
+          <div style="margin-bottom:.8rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.35rem;text-transform:uppercase;letter-spacing:.06em">Email Provider</label>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem;margin-bottom:.5rem" id="provider-cards">
+              <div class="prov-card" id="pc-brevo"    onclick="selectProvider('brevo')"   style="border:2px solid var(--blue);background:#eff6ff">
+                <div style="font-size:.82rem;font-weight:700;color:var(--blue)">Brevo</div>
+                <div style="font-size:.62rem;color:var(--green);font-weight:700">★ FREE 300/day</div>
+                <div style="font-size:.6rem;color:var(--muted)">Recommended</div>
+              </div>
+              <div class="prov-card" id="pc-sendgrid" onclick="selectProvider('sendgrid')">
+                <div style="font-size:.82rem;font-weight:700;color:var(--text)">SendGrid</div>
+                <div style="font-size:.62rem;color:var(--muted)">Free 100/day</div>
+                <div style="font-size:.6rem;color:var(--muted)">Easy API</div>
+              </div>
+              <div class="prov-card" id="pc-gmail"    onclick="selectProvider('gmail')">
+                <div style="font-size:.82rem;font-weight:700;color:var(--text)">Gmail</div>
+                <div style="font-size:.62rem;color:var(--muted)">App Password</div>
+                <div style="font-size:.6rem;color:var(--muted)">required</div>
+              </div>
+              <div class="prov-card" id="pc-custom"   onclick="selectProvider('custom')">
+                <div style="font-size:.82rem;font-weight:700;color:var(--text)">Custom</div>
+                <div style="font-size:.62rem;color:var(--muted)">Your SMTP</div>
+                <div style="font-size:.6rem;color:var(--muted)">College/Company</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- HELP BOX -->
+          <div id="emailHelp" style="font-size:.76rem;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:.6rem .8rem;margin-bottom:.8rem;color:#92400e;line-height:1.55;display:none"></div>
+
+          <!-- API KEY (Brevo / SendGrid) -->
+          <div id="api-key-row" style="margin-bottom:.6rem;display:none">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">API Key <span style="color:var(--green);font-weight:700">(paste from provider dashboard)</span></label>
+            <input type="password" id="cfg-apikey" style="width:100%;padding:.45rem .7rem;border:1.5px solid #a7f3d0;border-radius:7px;font-family:'DM Mono',monospace;font-size:.82rem" placeholder="xkeysib-… or SG.xxx…"/>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:.2rem" id="apikey-hint"></div>
+          </div>
+
+          <!-- SMTP FIELDS (Gmail, Outlook, Custom, Brevo SMTP fallback) -->
+          <div id="smtp-fields">
+            <div style="display:grid;grid-template-columns:1fr 80px;gap:.5rem;margin-bottom:.5rem">
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">SMTP Host</label>
+                <input type="text" id="cfg-host" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="smtp-relay.brevo.com"/>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Port</label>
+                <input type="number" id="cfg-port" style="width:100%;padding:.45rem .5rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" value="587"/>
+              </div>
+            </div>
+            <div style="margin-bottom:.5rem">
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Username / Login Email</label>
+              <input type="text" id="cfg-user" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="your@email.com"/>
+            </div>
+            <div style="margin-bottom:.5rem">
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Password / SMTP Password</label>
+              <input type="password" id="cfg-pass" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="Leave blank to keep existing"/>
+            </div>
+            <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.6rem">
+              <input type="checkbox" id="cfg-ssl" style="width:15px;height:15px;accent-color:var(--blue)"/>
+              <label for="cfg-ssl" style="font-size:.82rem;color:var(--text)">Use SSL (port 465)</label>
+            </div>
+          </div>
+
+          <!-- SENDER NAME + FROM EMAIL -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem">
+            <div>
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Sender Name</label>
+              <input type="text" id="cfg-fromname" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="ProctorAI Exams"/>
+            </div>
+            <div>
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">From Email</label>
+              <input type="email" id="cfg-fromemail" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="exams@yourdomain.com"/>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.8rem">
+            <input type="checkbox" id="cfg-enabled" style="width:15px;height:15px;accent-color:var(--green)"/>
+            <label for="cfg-enabled" style="font-size:.85rem;font-weight:700;color:var(--text)">✅ Enable email sending</label>
+          </div>
+
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <button class="btn btn-primary" onclick="saveEmailConfig()">💾 Save</button>
+            <button class="btn btn-ghost" onclick="testEmail()">🔌 Test Connection</button>
+          </div>
+          <div id="email-save-result" style="margin-top:.6rem;font-size:.8rem;line-height:1.5"></div>
+        </div>
+
+        <!-- EXAM SETTINGS -->
+        <div>
+          <div class="invite-box" style="margin-bottom:1rem">
+            <h3>📝 Exam Configuration</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem">
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">MCQ per exam</label>
+                <input type="number" id="ecfg-mcq" min="1" max="15" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem" value="5"/>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">SQL per exam</label>
+                <input type="number" id="ecfg-sql" min="1" max="5" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem" value="2"/>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Coding per exam</label>
+                <input type="number" id="ecfg-code" min="1" max="5" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem" value="2"/>
+              </div>
+              <div>
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Duration (minutes)</label>
+                <input type="number" id="ecfg-dur" min="10" max="180" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.88rem" value="30"/>
+              </div>
+              <div style="grid-column:1/-1">
+                <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Exam Base URL</label>
+                <input type="text" id="ecfg-url" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem" placeholder="http://127.0.0.1:5000"/>
+              </div>
+            </div>
+            <button class="btn btn-primary" style="margin-top:.8rem" onclick="saveExamConfig()">💾 Save Exam Config</button>
+            <div id="exam-cfg-result" style="margin-top:.5rem;font-size:.8rem"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADD QUESTION -->
+      <div class="invite-box">
+        <h3>➕ Add New Question</h3>
+        <div style="display:flex;gap:.6rem;margin-bottom:.8rem">
+          <select id="add-bank" onchange="onAddBankChange()" style="padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem">
+            <option value="mcq">📝 MCQ</option>
+            <option value="sql">🗄️ SQL</option>
+            <option value="coding">💻 Coding</option>
+          </select>
+          <span style="font-size:.8rem;color:var(--muted);align-self:center">Select type then fill the form below</span>
+        </div>
+
+        <!-- MCQ FORM -->
+        <div id="add-form-mcq">
+          <div style="margin-bottom:.5rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Question Text</label>
+            <textarea id="mcq-q" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem;resize:vertical;min-height:60px" placeholder="Enter the question…"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div><label style="font-size:.7rem;color:var(--muted)">Option A</label><input type="text" id="mcq-o0" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="Option A"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Option B</label><input type="text" id="mcq-o1" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="Option B"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Option C</label><input type="text" id="mcq-o2" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="Option C"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Option D</label><input type="text" id="mcq-o3" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="Option D"/></div>
+          </div>
+          <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:.7rem">
+            <div><label style="font-size:.7rem;color:var(--muted)">Correct (0-3)</label><input type="number" id="mcq-correct" min="0" max="3" value="0" style="width:70px;padding:.4rem .5rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Topic</label><input type="text" id="mcq-topic" style="width:120px;padding:.4rem .6rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="e.g. Python"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Marks</label><input type="number" id="mcq-marks" value="2" style="width:65px;padding:.4rem .5rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem"/></div>
+          </div>
+        </div>
+
+        <!-- SQL FORM -->
+        <div id="add-form-sql" style="display:none">
+          <div style="margin-bottom:.5rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Question</label>
+            <textarea id="sql-q" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem;resize:vertical;min-height:50px" placeholder="Write a SQL query to…"></textarea>
+          </div>
+          <div style="margin-bottom:.5rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Setup SQL (CREATE TABLE + INSERT)</label>
+            <textarea id="sql-setup" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical;min-height:80px;background:#f8faff" placeholder="CREATE TABLE employees (id INTEGER PRIMARY KEY, name TEXT, salary REAL);&#10;INSERT INTO employees VALUES (1,'Alice',75000),(2,'Bob',45000);"></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div>
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Expected Output (JSON rows)</label>
+              <textarea id="sql-expected" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical;min-height:60px;background:#f8faff" placeholder='[["Alice",75000],["Bob",45000]]'></textarea>
+            </div>
+            <div>
+              <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Expected Column Names</label>
+              <input type="text" id="sql-cols" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem" placeholder="name, salary"/>
+            </div>
+          </div>
+          <div style="display:flex;gap:.6rem;margin-bottom:.7rem">
+            <div style="flex:1"><label style="font-size:.7rem;color:var(--muted)">Hint</label><input type="text" id="sql-hint" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="Use WHERE salary > …"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Topic</label><input type="text" id="sql-topic" style="width:100px;padding:.4rem .6rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="SELECT"/></div>
+            <div><label style="font-size:.7rem;color:var(--muted)">Marks</label><input type="number" id="sql-marks" value="5" style="width:65px;padding:.4rem .5rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem"/></div>
+          </div>
+        </div>
+
+        <!-- CODING FORM -->
+        <div id="add-form-coding" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem">
+            <div>
+              <label style="font-size:.7rem;color:var(--muted)">Problem Title</label>
+              <input type="text" id="code-title" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="e.g. Sum of N Numbers"/>
+            </div>
+            <div>
+              <label style="font-size:.7rem;color:var(--muted)">Topic</label>
+              <input type="text" id="code-topic" style="width:100%;padding:.4rem .65rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.83rem" placeholder="e.g. Loops"/>
+            </div>
+          </div>
+          <div style="margin-bottom:.5rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Problem Description</label>
+            <textarea id="code-q" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.85rem;resize:vertical;min-height:60px" placeholder="Read N and print…"></textarea>
+          </div>
+          <div style="margin-bottom:.5rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Hint</label>
+            <input type="text" id="code-hint" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:.83rem" placeholder="Use a loop from 1 to N"/>
+          </div>
+          <div style="margin-bottom:.6rem">
+            <label style="font-size:.72rem;font-weight:600;color:var(--muted);display:block;margin-bottom:.22rem;text-transform:uppercase;letter-spacing:.06em">Test Cases (one per line: Input | ExpectedOutput)</label>
+            <textarea id="code-tests" style="width:100%;padding:.45rem .7rem;border:1.5px solid var(--border);border-radius:7px;font-family:'DM Mono',monospace;font-size:.78rem;resize:vertical;min-height:70px;background:#f8faff" placeholder="5 | 15&#10;10 | 55&#10;1 | 1"></textarea>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:.2rem">Format: input | expected_output (use 
+ for multi-line input)</div>
+          </div>
+          <div><label style="font-size:.7rem;color:var(--muted)">Marks</label><input type="number" id="code-marks" value="10" style="width:70px;padding:.4rem .5rem;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:.85rem"/></div>
+        </div>
+
+        <button class="btn btn-green" style="margin-top:.8rem" onclick="addQuestion()">➕ Add Question</button>
+        <div id="add-q-result" style="margin-top:.5rem;font-size:.8rem"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <h2 id="modalTitle">Session Detail</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody">Loading…</div>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// ProctorAI Admin Dashboard — single clean JS, no duplicate functions
+// ─────────────────────────────────────────────────────────────────────────────
+let allSessions = [], currentTab = 'dashboard';
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active'));
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  const pt = document.getElementById('ptab-' + tab);
+  if (pt) pt.classList.add('active');
+  const titles = {
+    dashboard: '📊 Dashboard', sessions: '👤 Exam Sessions',
+    'invites-list': '📋 Invite History',
+    questions: '📚 Question Bank', settings: '⚙️ Settings'
+  };
+  document.getElementById('mainTitle').textContent = titles[tab] || tab;
+  if (tab === 'dashboard')     { loadStats(); loadSessions('dash'); }
+  else if (tab === 'sessions') { loadSessions('sess'); }
+  else if (tab === 'invites-list') { loadInviteHistory(); }
+  else if (tab === 'questions')    { loadQuestionBank(); }
+  else if (tab === 'settings')     { loadEmailConfig(); loadExamConfig(); }
+}
+
+// ── STATS ─────────────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const r = await fetch('/admin/api/stats');
+    const d = await r.json();
+    document.getElementById('st-total').textContent     = d.total;
+    document.getElementById('st-active').textContent    = d.active;
+    document.getElementById('st-submitted').textContent = d.submitted;
+    document.getElementById('st-flagged').textContent   = d.flagged;
+    document.getElementById('st-terminated').textContent = d.terminated || 0;
+    document.getElementById('st-avgscore').textContent  = d.avg_score || '—';
+  } catch(e) { console.error('loadStats:', e); }
+}
+
+// ── SESSIONS ──────────────────────────────────────────────────────────────────
+async function loadSessions(target) {
+  try {
+    const r = await fetch('/admin/api/sessions');
+    allSessions = await r.json();
+  } catch(e) { console.error('loadSessions:', e); return; }
+  if (target === 'dash' || !target) renderTable(allSessions, 'dashTableWrap');
+  if (target === 'sess' || !target) {
+    renderTable(allSessions, 'sessTableWrap');
+    const el = document.getElementById('resultCount');
+    if (el) el.textContent = allSessions.length + ' sessions';
+  }
+}
+
+function filterSessions() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allSessions.filter(s =>
+    s.username.toLowerCase().includes(q) || s.email.toLowerCase().includes(q));
+  renderTable(filtered, 'sessTableWrap');
+  document.getElementById('resultCount').textContent = filtered.length + ' results';
+}
+
+function riskClass(cs) {
+  if (cs < 25)  return ['risk-low', 'Low'];
+  if (cs < 50)  return ['risk-med', 'Moderate'];
+  if (cs < 75)  return ['risk-high', 'High'];
+  return ['risk-crit', 'Critical'];
+}
+
+function renderTable(sessions, wrapperId) {
+  const wrap = document.getElementById(wrapperId);
+  if (!wrap) return;
+  if (!sessions.length) {
+    wrap.innerHTML = '<div class="empty">No sessions found</div>';
+    return;
+  }
+  const rows = sessions.map(s => {
+    const [rC, rL] = riskClass(s.cheating_score || 0);
+    const score    = s.score != null ? s.score + '/' + s.total_marks : '—';
+    const start    = (s.start_time || '').slice(0, 16).replace('T', ' ');
+    const sb = s.terminated
+      ? '<span class="badge badge-terminated">⛔ Terminated</span>'
+      : s.status === 'active'
+        ? '<span class="badge badge-active">Active</span>'
+        : s.status === 'expired'
+          ? '<span class="badge badge-expired">Expired</span>'
+          : '<span class="badge badge-submitted">Submitted</span>';
+    return `<tr>
+      <td><strong>${s.username}</strong><br/><span style="font-size:.7rem;color:var(--muted)">${s.email}</span></td>
+      <td>${sb}</td>
+      <td style="font-family:'DM Mono',monospace;font-size:.75rem">${start}</td>
+      <td style="font-family:'DM Mono',monospace;font-weight:700;color:var(--blue)">${score}</td>
+      <td><span class="risk-chip ${rC}">${s.cheating_score || 0}%</span></td>
+      <td>${s.phone_count||0} / ${s.multi_person_count||0} / ${s.face_mismatch_count||0}</td>
+      <td>${s.tab_switch_count || 0}</td>
+      <td>${s.screenshot_count || 0}</td>
+      <td><button class="tbl-btn" onclick="viewDetail('${s.session_id}')">Details</button></td>
+    </tr>`;
+  }).join('');
+  wrap.innerHTML = `<div class="table-card">
+    <div class="table-header"><h3>Exam Sessions</h3></div>
+    <table><thead><tr>
+      <th>Candidate</th><th>Status</th><th>Start</th><th>Score</th>
+      <th>Risk</th><th>Phone/Multi/Face</th><th>Tab</th><th>Screenshots</th><th>Action</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+// ── SESSION DETAIL MODAL ──────────────────────────────────────────────────────
+async function viewDetail(sid) {
+  document.getElementById('detailModal').classList.add('show');
+  document.getElementById('modalBody').innerHTML =
+    '<div style="text-align:center;padding:2rem"><span class="spin"></span>Loading…</div>';
+  try {
+    const r = await fetch('/admin/api/session/' + sid);
+    const s = await r.json();
+    document.getElementById('modalTitle').textContent = s.username + ' — Detail';
+    const [rC, rL] = riskClass(s.cheating_score || 0);
+    const ssHtml = (s.screenshots || []).length > 0
+      ? (s.screenshots || []).map(ss =>
+          `<img class="ss-img" src="/admin/screenshot/${ss.file}"
+           onclick="window.open(this.src)" title="${ss.reason}" onerror="this.style.display='none'">`
+        ).join('')
+      : '<div style="color:var(--muted);font-size:.8rem">No screenshots captured</div>';
+    const wLog = (s.warnings || []).slice(0, 8).map(w =>
+      `<div style="padding:.28rem .45rem;font-size:.73rem;border-left:3px solid var(--border);margin-bottom:.25rem">
+        ${(w.time||'').slice(0,16).replace('T',' ')} — ${(w.types||[]).join(', ')}
+      </div>`).join('') || '<div style="color:var(--muted);font-size:.78rem">No violations</div>';
+    const trHtml = (s.transcript || []).length > 0
+      ? `<div style="background:#f8faff;border:1px solid #c7d7f5;border-radius:7px;padding:.5rem .7rem;max-height:140px;overflow-y:auto;font-size:.72rem;font-family:monospace">
+          ${(s.transcript||[]).map(e =>
+            `<div style="border-bottom:1px solid #e5e7eb;padding:.18rem 0">
+              <span style="color:#9ca3af">[${(e.time||'').slice(0,19).replace('T',' ')}]</span>
+              "${e.text||e.txt||''}"
+            </div>`).join('')}
+        </div>`
+      : '<div style="color:var(--muted);font-size:.78rem">No speech detected</div>';
+    document.getElementById('modalBody').innerHTML = `
+      <div class="detail-grid">
+        <div class="dg-item"><div class="dg-lbl">Username</div><div class="dg-val">${s.username}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Email</div><div class="dg-val" style="font-family:'DM Sans',sans-serif;font-size:.82rem">${s.email}</div></div>
+        <div class="dg-item"><div class="dg-lbl">MCQ Score</div><div class="dg-val">${s.mcq_score||0} / ${s.mcq_total||0}</div></div>
+        <div class="dg-item"><div class="dg-lbl">SQL Score</div><div class="dg-val">${s.sql_score||0} / ${s.sql_total||0}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Code Score</div><div class="dg-val">${s.code_score||0} / ${s.code_total||0}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Total Score</div><div class="dg-val" style="color:var(--blue)">${s.score!=null?s.score+'/'+s.total_marks:'N/A'}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Cheat Score</div><div class="dg-val"><span class="risk-chip ${rC}">${s.cheating_score||0}% — ${rL}</span></div></div>
+        <div class="dg-item"><div class="dg-lbl">Phone / Multi / Face</div><div class="dg-val">${s.phone_count||0} / ${s.multi_person_count||0} / ${s.face_mismatch_count||0}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Tab Switches</div><div class="dg-val" style="color:${(s.tab_switch_count||0)>=2?'var(--red)':'inherit'}">${s.tab_switch_count||0}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Status</div><div class="dg-val">${s.terminated?'⛔ TERMINATED':s.status}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Enrolled</div><div class="dg-val">${s.enrolled?'✅ Yes':'❌ No'}</div></div>
+        <div class="dg-item"><div class="dg-lbl">Start → End</div><div class="dg-val" style="font-size:.72rem">${(s.start_time||'').slice(0,16).replace('T',' ')} → ${s.end_time?s.end_time.slice(0,16).replace('T',' '):'In Progress'}</div></div>
+      </div>
+      ${s.terminated?`<div style="background:#fff5f5;border:1px solid #fca5a5;border-radius:7px;padding:.6rem .9rem;margin-bottom:.9rem;font-size:.82rem;color:#7f1d1d">⛔ <strong>Terminated:</strong> ${s.terminate_reason||''}</div>`:''}
+      <div style="margin-bottom:.9rem">
+        <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">📋 Violations</div>
+        ${wLog}
+      </div>
+      <div style="margin-bottom:.9rem">
+        <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">🎤 Speech Transcript</div>
+        ${trHtml}
+      </div>
+      <div>
+        <div style="font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">📷 Screenshots (${(s.screenshots||[]).length})</div>
+        <div class="ss-grid">${ssHtml}</div>
+      </div>`;
+  } catch(e) {
+    document.getElementById('modalBody').innerHTML = '<div class="empty">Error loading session</div>';
+    console.error('viewDetail:', e);
+  }
+}
+
+function closeModal() { document.getElementById('detailModal').classList.remove('show'); }
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('detailModal').addEventListener('click', e => {
+    if (e.target.id === 'detailModal') closeModal();
+  });
+});
+
+// ── INVITES ───────────────────────────────────────────────────────────────────
+
+
+function copyLink(link) { navigator.clipboard.writeText(link).then(() => alert('Link copied!')); }
+
+async function loadInviteHistory() {
+  const wrap = document.getElementById('inviteHistoryWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>';
+  try {
+    const r = await fetch('/admin/api/invites');
+    const invites = await r.json();
+    if (!invites.length) { wrap.innerHTML = '<div class="empty">No invites sent yet</div>'; return; }
+    const rows = invites.map(inv => {
+      const exp = new Date(inv.expires) < new Date();
+      return `<tr>
+        <td><strong>${inv.name}</strong></td>
+        <td>${inv.email}</td>
+        <td>${(inv.created||'').slice(0,16).replace('T',' ')}</td>
+        <td>${(inv.expires||'').slice(0,16).replace('T',' ')}</td>
+        <td>${inv.used
+          ? '<span class="badge badge-submitted">Used</span>'
+          : exp
+            ? '<span class="badge badge-expired">Expired</span>'
+            : '<span class="badge badge-active">Pending</span>'}</td>
+        <td><span class="link-copy" onclick="copyLink('${window.location.origin}/exam/start/${inv.token}')" title="Click to copy">🔗 Copy</span></td>
+      </tr>`;
+    }).join('');
+    wrap.innerHTML = `<div class="table-card"><table>
+      <thead><tr><th>Name</th><th>Email</th><th>Sent</th><th>Expires</th><th>Status</th><th>Link</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  } catch(e) { wrap.innerHTML = '<div class="empty">Error loading invites</div>'; }
+}
+
+// ── QUESTION BANK ─────────────────────────────────────────────────────────────
+async function loadQBankConfig() {
+  try {
+    const r = await fetch('/admin/api/question_bank');
+    const d = await r.json();
+    const el = id => document.getElementById(id);
+    if (el('cfg-mcq'))  el('cfg-mcq').textContent  = d.mcq_per_exam;
+    if (el('cfg-sql'))  el('cfg-sql').textContent  = d.sql_per_exam;
+    if (el('cfg-code')) el('cfg-code').textContent = d.code_per_exam;
+    if (el('cfg-bank')) el('cfg-bank').textContent = d.mcq_total + d.sql_total + d.coding_total;
+  } catch(e) {}
+}
+
+async function loadQuestionBank() {
+  const wrap = document.getElementById('qbankWrap');
+  wrap.innerHTML = '<div class="empty"><span class="spin"></span>Loading…</div>';
+  try {
+    const r = await fetch('/admin/api/question_bank');
+    const d = await r.json();
+    // Build section breakdown from MCQ data
+    const sectionCount = {};
+    const topicCount   = {};
+    (d.mcq||[]).forEach(q => {
+      const sec = q.section || 'General';
+      const top = q.topic   || 'General';
+      sectionCount[sec] = (sectionCount[sec]||0) + 1;
+      topicCount[top]   = (topicCount[top]||0)   + 1;
+    });
+    const sectionColors = {
+      'Numerical Ability':'#2563eb','Reasoning Ability':'#7c3aed',
+      'Verbal Ability':'#059669','Advanced Quant':'#ea580c','Advanced Reasoning':'#dc2626'
+    };
+    let sectionPills = Object.entries(sectionCount).map(([sec,cnt]) => {
+      const col = sectionColors[sec] || '#64748b';
+      return `<span style="display:inline-block;background:${col}15;color:${col};border:1px solid ${col}40;
+        border-radius:20px;padding:.2rem .7rem;font-size:.72rem;font-weight:700;margin:.15rem">
+        ${sec}: ${cnt}</span>`;
+    }).join('');
+
+    let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1rem">
+      <div class="stat-card"><div class="sc-val" style="color:var(--blue)">${d.mcq_total}</div><div class="sc-lbl">MCQ (${d.mcq_per_exam}/exam)</div></div>
+      <div class="stat-card"><div class="sc-val" style="color:var(--purple)">${d.sql_total}</div><div class="sc-lbl">SQL (${d.sql_per_exam}/exam)</div></div>
+      <div class="stat-card"><div class="sc-val" style="color:#059669">${d.coding_total}</div><div class="sc-lbl">Coding (${d.code_per_exam}/exam)</div></div>
+      <div class="stat-card"><div class="sc-val" style="color:var(--orange)">${d.mcq_total+d.sql_total+d.coding_total}</div><div class="sc-lbl">Total questions</div></div>
+    </div>
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:.9rem 1.1rem;margin-bottom:1rem">
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem">MCQ Sections</div>
+      <div>${sectionPills}</div>
+    </div>`;
+    // MCQ table
+    html += `<div class="table-card" style="margin-bottom:.9rem">
+      <div class="table-header"><h3>📝 MCQ Bank</h3>
+        <button class="btn btn-green" onclick="showTab('settings');document.getElementById('add-bank').value='mcq';onAddBankChange()">➕ Add MCQ</button>
+      </div>
+      <table><thead><tr><th>#</th><th>Question</th><th>Correct Answer</th><th>Topic</th><th>Marks</th><th>Del</th></tr></thead><tbody>`;
+    d.mcq.forEach((q,i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td style="max-width:300px;white-space:normal;font-size:.78rem">${q.question}</td>
+        <td style="font-size:.75rem;color:var(--green)">${(q.options||[])[q.correct]||'—'}</td>
+        <td>${q.topic}</td><td>${q.marks}</td>
+        <td><button class="tbl-btn" style="color:var(--red)" onclick="deleteQuestion('${q.id}')">🗑</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    // SQL table
+    html += `<div class="table-card" style="margin-bottom:.9rem">
+      <div class="table-header"><h3>🗄️ SQL Bank</h3>
+        <button class="btn btn-purple" onclick="showTab('settings');document.getElementById('add-bank').value='sql';onAddBankChange()">➕ Add SQL</button>
+      </div>
+      <table><thead><tr><th>#</th><th>Question</th><th>Topic</th><th>Rows</th><th>Marks</th><th>Del</th></tr></thead><tbody>`;
+    d.sql.forEach((q,i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td style="max-width:320px;white-space:normal;font-size:.78rem">${q.question}</td>
+        <td>${q.topic}</td>
+        <td style="font-family:'DM Mono',monospace">${(q.expected_output||[]).length}</td>
+        <td>${q.marks}</td>
+        <td><button class="tbl-btn" style="color:var(--red)" onclick="deleteQuestion('${q.id}')">🗑</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    // Coding table
+    html += `<div class="table-card">
+      <div class="table-header"><h3>💻 Coding Bank</h3>
+        <button class="btn btn-ghost" onclick="showTab('settings');document.getElementById('add-bank').value='coding';onAddBankChange()">➕ Add Problem</button>
+      </div>
+      <table><thead><tr><th>#</th><th>Title</th><th>Description</th><th>Topic</th><th>Tests</th><th>Marks</th><th>Del</th></tr></thead><tbody>`;
+    d.coding.forEach((q,i) => {
+      html += `<tr>
+        <td>${i+1}</td>
+        <td style="font-weight:600;font-size:.8rem">${q.title||'—'}</td>
+        <td style="max-width:230px;white-space:normal;font-size:.73rem;color:var(--muted)">${(q.question||'').substring(0,65)}…</td>
+        <td>${q.topic}</td><td>${(q.test_cases||[]).length}</td><td>${q.marks}</td>
+        <td><button class="tbl-btn" style="color:var(--red)" onclick="deleteQuestion('${q.id}')">🗑</button></td>
+      </tr>`;
+    });
+    html += '</tbody></table></div>';
+    wrap.innerHTML = html;
+  } catch(e) {
+    wrap.innerHTML = '<div class="empty">Error loading question bank: ' + e.message + '</div>';
+    console.error('loadQuestionBank:', e);
+  }
+}
+
+async function deleteQuestion(qid) {
+  if (!confirm('Delete question ' + qid + '? Cannot be undone.')) return;
+  try {
+    const r = await fetch('/admin/api/question/' + qid, {method: 'DELETE'});
+    const d = await r.json();
+    if (d.ok) loadQuestionBank();
+    else alert('Error: ' + (d.error || 'unknown'));
+  } catch(e) { alert('Network error'); }
+}
+
+// ── SETTINGS: Email ───────────────────────────────────────────────────────────
+// Provider configs synced with backend PROVIDER_PRESETS
+const PROV_CONF = {
+  brevo:    {host:'smtp-relay.brevo.com',   port:587, ssl:false, api:true,
+             help:'FREE 300 emails/day — no App Password needed!<br/>Steps: 1) Create free account at <strong>brevo.com</strong>  2) Go to <strong>SMTP &amp; API → SMTP</strong>  3) Copy the <strong>SMTP Login</strong> (your email) and <strong>SMTP Password</strong>  4) Also copy your <strong>API Key</strong> from SMTP &amp; API → API Keys  5) Paste both above and save.',
+             apiHint:'Get from brevo.com → SMTP & API → API Keys → Create New API Key'},
+  sendgrid: {host:'smtp.sendgrid.net',      port:587, ssl:false, api:true,
+             help:'FREE 100 emails/day.<br/>Steps: 1) Create account at <strong>sendgrid.com</strong>  2) Go to <strong>Settings → API Keys → Create API Key</strong> (Full Access)  3) Paste the key above.',
+             apiHint:'Get from sendgrid.com → Settings → API Keys'},
+  mailgun:  {host:'smtp.mailgun.org',       port:587, ssl:false, api:false,
+             help:'FREE 1000 emails/month.<br/>Steps: 1) Create account at <strong>mailgun.com</strong>  2) Go to <strong>Sending → Domains</strong>  3) Copy SMTP credentials from your domain.'},
+  gmail:    {host:'smtp.gmail.com',         port:587, ssl:false, api:false,
+             help:'Requires an App Password — NOT your Gmail login password.<br/>Steps: 1) Enable 2-Step Verification  2) Go to <strong>Google Account → Security → App Passwords</strong>  3) Generate a password for "Mail"  4) Paste the 16-char code above.'},
+  outlook:  {host:'smtp.office365.com',     port:587, ssl:false, api:false,
+             help:'Use your Microsoft 365 password or an App Password from Microsoft account security.'},
+  yahoo:    {host:'smtp.mail.yahoo.com',    port:587, ssl:false, api:false,
+             help:'Create an App Password at Yahoo Account Security settings.'},
+  custom:   {host:'',                       port:587, ssl:false, api:false,
+             help:'Enter your company or college SMTP details. Ask your IT team for: Host, Port, Username, Password.'},
+};
+
+let _currentProvider = 'brevo';
+
+function selectProvider(p) {
+  _currentProvider = p;
+  // Update card highlights
+  Object.keys(PROV_CONF).forEach(k => {
+    const el = document.getElementById('pc-' + k);
+    if (el) el.classList.toggle('active', k === p);
+  });
+  const cfg = PROV_CONF[p] || {};
+  // Fill SMTP fields
+  if (cfg.host) document.getElementById('cfg-host').value = cfg.host;
+  if (cfg.port) document.getElementById('cfg-port').value = cfg.port;
+  document.getElementById('cfg-ssl').checked = cfg.ssl || false;
+  // Show/hide API key row
+  const apiRow = document.getElementById('api-key-row');
+  if (apiRow) {
+    apiRow.style.display = cfg.api ? 'block' : 'none';
+    const hint = document.getElementById('apikey-hint');
+    if (hint) hint.innerHTML = cfg.apiHint || '';
+  }
+  // Help box
+  const hEl = document.getElementById('emailHelp');
+  if (hEl && cfg.help) { hEl.innerHTML = '💡 ' + cfg.help; hEl.style.display = 'block'; }
+  else if (hEl) hEl.style.display = 'none';
+}
+
+function onProviderChange() { selectProvider(_currentProvider); }
+
+async function loadEmailConfig() {
+  try {
+    const r = await fetch('/admin/api/email_config');
+    const d = await r.json();
+    const c = d.config || {};
+    _currentProvider = c.provider || 'brevo';
+    document.getElementById('cfg-host').value       = c.smtp_host   || '';
+    document.getElementById('cfg-port').value       = c.smtp_port   || 587;
+    document.getElementById('cfg-user').value       = c.smtp_user   || '';
+    document.getElementById('cfg-apikey') && (document.getElementById('cfg-apikey').value = c.api_key === '***' ? '' : (c.api_key||''));
+    document.getElementById('cfg-ssl').checked      = c.use_ssl     || false;
+    document.getElementById('cfg-enabled').checked  = c.enabled     || false;
+    if (document.getElementById('cfg-fromname'))  document.getElementById('cfg-fromname').value  = c.from_name  || 'ProctorAI Exams';
+    if (document.getElementById('cfg-fromemail')) document.getElementById('cfg-fromemail').value = c.from_email || '';
+    selectProvider(_currentProvider);
+  } catch(e) { console.error('loadEmailConfig:', e); }
+}
+
+async function saveEmailConfig() {
+  const res = document.getElementById('email-save-result');
+  res.textContent = 'Saving…'; res.style.color = 'var(--muted)';
+  const body = {
+    provider:   _currentProvider,
+    smtp_host:  document.getElementById('cfg-host').value.trim(),
+    smtp_port:  parseInt(document.getElementById('cfg-port').value) || 587,
+    smtp_user:  document.getElementById('cfg-user').value.trim(),
+    smtp_pass:  document.getElementById('cfg-pass').value,
+    api_key:    document.getElementById('cfg-apikey') ? document.getElementById('cfg-apikey').value : '',
+    from_name:  document.getElementById('cfg-fromname')  ? document.getElementById('cfg-fromname').value.trim()  : 'ProctorAI Exams',
+    from_email: document.getElementById('cfg-fromemail') ? document.getElementById('cfg-fromemail').value.trim() : '',
+    use_ssl:    document.getElementById('cfg-ssl').checked,
+    enabled:    document.getElementById('cfg-enabled').checked,
+  };
+  try {
+    const r = await fetch('/admin/api/email_config', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const d = await r.json();
+    res.textContent = d.ok ? '✅ Saved successfully' : '❌ Error saving';
+    res.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { res.textContent = 'Network error'; res.style.color = 'var(--red)'; }
+}
+
+async function testEmail() {
+  const res = document.getElementById('email-save-result');
+  res.innerHTML = '<span class="spin"></span>Testing connection…'; res.style.color = 'var(--muted)';
+  try {
+    const r = await fetch('/admin/api/test_email', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d = await r.json();
+    res.textContent = d.ok ? '✅ ' + d.message : '❌ ' + d.message;
+    res.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { res.textContent = 'Network error'; res.style.color = 'var(--red)'; }
+}
+
+// ── SETTINGS: Exam config ─────────────────────────────────────────────────────
+async function loadExamConfig() {
+  try {
+    const r = await fetch('/admin/api/exam_settings');
+    const d = await r.json();
+    document.getElementById('ecfg-mcq').value  = d.mcq_per_exam  || 5;
+    document.getElementById('ecfg-sql').value  = d.sql_per_exam  || 2;
+    document.getElementById('ecfg-code').value = d.code_per_exam || 2;
+    document.getElementById('ecfg-dur').value  = Math.round((d.exam_duration || 1800) / 60);
+    document.getElementById('ecfg-url').value  = d.exam_base_url || '';
+  } catch(e) { console.error('loadExamConfig:', e); }
+}
+
+async function saveExamConfig() {
+  const res  = document.getElementById('exam-cfg-result');
+  res.textContent = 'Saving…'; res.style.color = 'var(--muted)';
+  const body = {
+    mcq_per_exam:  parseInt(document.getElementById('ecfg-mcq').value),
+    sql_per_exam:  parseInt(document.getElementById('ecfg-sql').value),
+    code_per_exam: parseInt(document.getElementById('ecfg-code').value),
+    exam_duration: parseInt(document.getElementById('ecfg-dur').value) * 60,
+    exam_base_url: document.getElementById('ecfg-url').value.trim(),
+  };
+  try {
+    const r = await fetch('/admin/api/exam_settings', {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+    });
+    const d = await r.json();
+    res.textContent = d.ok ? '✅ Saved' : '❌ Error'; res.style.color = d.ok ? 'var(--green)' : 'var(--red)';
+  } catch(e) { res.textContent = 'Network error'; res.style.color = 'var(--red)'; }
+}
+
+// ── ADD QUESTION ──────────────────────────────────────────────────────────────
+function onAddBankChange() {
+  const b = document.getElementById('add-bank').value;
+  ['mcq','sql','coding'].forEach(x => {
+    document.getElementById('add-form-' + x).style.display = (x === b) ? 'block' : 'none';
+  });
+}
+
+async function addQuestion() {
+  const bank = document.getElementById('add-bank').value;
+  const res  = document.getElementById('add-q-result');
+  let qdata  = {};
+  if (bank === 'mcq') {
+    const opts = [0,1,2,3].map(i => document.getElementById('mcq-o' + i).value.trim());
+    if (!document.getElementById('mcq-q').value.trim() || opts.some(o => !o)) {
+      res.textContent = 'Fill question + all 4 options'; res.style.color = 'var(--red)'; return;
+    }
+    qdata = {
+      question: document.getElementById('mcq-q').value.trim(),
+      options:  opts,
+      correct:  parseInt(document.getElementById('mcq-correct').value) || 0,
+      topic:    document.getElementById('mcq-topic').value.trim() || 'General',
+      marks:    parseInt(document.getElementById('mcq-marks').value) || 2,
+    };
+  } else if (bank === 'sql') {
+    let expected = [];
+    try { expected = JSON.parse(document.getElementById('sql-expected').value); }
+    catch(e) { res.textContent = 'Expected output must be valid JSON e.g. [["Alice",75000]]'; res.style.color = 'var(--red)'; return; }
+    const cols = document.getElementById('sql-cols').value.split(',').map(c => c.trim()).filter(Boolean);
+    qdata = {
+      question:        document.getElementById('sql-q').value.trim(),
+      setup_sql:       document.getElementById('sql-setup').value.trim(),
+      expected_output: expected,
+      expected_cols:   cols,
+      hint:            document.getElementById('sql-hint').value.trim(),
+      topic:           document.getElementById('sql-topic').value.trim() || 'SQL',
+      marks:           parseInt(document.getElementById('sql-marks').value) || 5,
+    };
+  } else {
+    const lines = document.getElementById('code-tests').value.trim().split('\n').filter(Boolean);
+    const test_cases = lines.map(l => {
+      const p = l.split('|');
+      return {input: (p[0]||'').trim(), expected_output: (p[1]||'').trim()};
+    });
+    qdata = {
+      title:           document.getElementById('code-title').value.trim(),
+      question:        document.getElementById('code-q').value.trim(),
+      hint:            document.getElementById('code-hint').value.trim(),
+      topic:           document.getElementById('code-topic').value.trim() || 'General',
+      marks:           parseInt(document.getElementById('code-marks').value) || 10,
+      test_cases,
+      template_python: '# Write your solution here\n',
+      template_java:   'import java.util.Scanner;\npublic class Main {\n    public static void main(String[] args) {\n        // Write your solution here\n    }\n}',
+    };
+  }
+  try {
+    const r = await fetch('/admin/api/question', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({bank, question: qdata})
+    });
+    const d = await r.json();
+    if (d.ok) {
+      res.textContent = '✅ Added! ID: ' + d.id; res.style.color = 'var(--green)';
+      document.querySelectorAll('#add-form-' + bank + ' input[type="text"], #add-form-' + bank + ' textarea')
+        .forEach(el => el.value = '');
+    } else {
+      res.textContent = '❌ ' + (d.error || 'Error'); res.style.color = 'var(--red)';
+    }
+  } catch(e) { res.textContent = 'Network error'; res.style.color = 'var(--red)'; }
+}
+
+// ── MISC ──────────────────────────────────────────────────────────────────────
+async function exportExcel() { window.open('/admin/api/export', '_blank'); }
+
+function refresh() {
+  if      (currentTab === 'dashboard')    { loadStats(); loadSessions('dash'); }
+  else if (currentTab === 'sessions')     { loadSessions('sess'); }
+  else if (currentTab === 'invites-list') { loadInviteHistory(); }
+  else if (currentTab === 'questions')    { loadQuestionBank(); }
+  else if (currentTab === 'settings')     { loadEmailConfig(); loadExamConfig(); }
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+setInterval(loadStats, 15000);
+setInterval(() => { if (currentTab === 'dashboard') loadSessions('dash'); }, 30000);
+window.addEventListener('load', () => { showTab('dashboard'); loadQBankConfig(); });
+</script>
+</body>
+</html>

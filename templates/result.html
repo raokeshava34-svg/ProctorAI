@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Exam Result — ProctorAI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2563eb;--dark:#1e3a8a;--light:#eff6ff;--red:#dc2626;--green:#16a34a;--orange:#ea580c;--purple:#7c3aed;--bg:#f0f4f9;--text:#1a2332;--muted:#6b7280;--border:#d1d9e0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;padding-bottom:3rem}
+.page-wrap{max-width:860px;margin:0 auto;padding:1.5rem 1rem}
+/* HERO */
+.hero{background:linear-gradient(135deg,#0a1628,#1a2e5a);border-radius:16px;padding:2rem;color:#fff;margin-bottom:1.3rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 90% 10%,rgba(37,99,235,.25),transparent)}
+.hero-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.2rem}
+.hero-name{font-size:1.3rem;font-weight:700}
+.hero-email{font-size:.8rem;color:rgba(255,255,255,.55);margin-top:.2rem}
+.status-pill{padding:.4rem 1rem;border-radius:20px;font-size:.82rem;font-weight:700;border:1.5px solid}
+.pill-pass{background:rgba(22,163,74,.2);border-color:#4ade80;color:#4ade80}
+.pill-fail{background:rgba(234,88,12,.2);border-color:#fb923c;color:#fb923c}
+.pill-term{background:rgba(220,38,38,.2);border-color:#f87171;color:#f87171}
+.score-display{text-align:center;margin-bottom:1.2rem}
+.score-big{font-family:'DM Mono',monospace;font-size:3.5rem;font-weight:700;line-height:1;color:#fff}
+.score-total{font-size:.9rem;color:rgba(255,255,255,.5)}
+.score-pct{font-size:1.2rem;font-weight:700;color:#60a5fa;margin-top:.2rem}
+.hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem}
+.hstat{background:rgba(255,255,255,.07);border-radius:10px;padding:.7rem .9rem;text-align:center}
+.hstat-val{font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:700;color:#fff}
+.hstat-lbl{font-size:.65rem;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-top:.15rem}
+.time-row{font-size:.73rem;color:rgba(255,255,255,.4);margin-top:.7rem;text-align:center}
+/* TERMINATION BANNER */
+.term-banner{background:linear-gradient(135deg,#7f1d1d,#991b1b);border-radius:12px;padding:1.2rem 1.4rem;margin-bottom:1.3rem;border:1.5px solid #f87171}
+.term-banner-title{color:#fca5a5;font-size:1.1rem;font-weight:700;margin-bottom:.5rem}
+.term-reason{color:#fff;font-size:.88rem;margin-bottom:.8rem}
+.term-counts{display:flex;gap:.6rem;flex-wrap:wrap}
+.tcount{background:rgba(0,0,0,.2);border:1px solid rgba(248,113,113,.3);border-radius:8px;padding:.45rem .8rem;text-align:center;min-width:72px}
+.tcount-val{font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:700;color:#fff}
+.tcount-lbl{font-size:.58rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em}
+/* CARDS */
+.card{background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:1.3rem;margin-bottom:1rem;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card h2{font-size:.95rem;font-weight:700;color:var(--text);margin-bottom:.9rem;padding-bottom:.6rem;border-bottom:1px solid var(--border)}
+/* SECTION SCORES */
+.section-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-bottom:.4rem}
+.sec-box{border-radius:10px;padding:1rem;text-align:center}
+.sec-box.mcq{background:#eff6ff;border:1.5px solid #bfdbfe}
+.sec-box.sql{background:#f5f3ff;border:1.5px solid #ddd6fe}
+.sec-box.code{background:#ecfdf5;border:1.5px solid #a7f3d0}
+.sec-icon{font-size:1.5rem;margin-bottom:.3rem}
+.sec-label{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem}
+.sec-box.mcq .sec-label{color:var(--blue)}
+.sec-box.sql .sec-label{color:var(--purple)}
+.sec-box.code .sec-label{color:#059669}
+.sec-score{font-family:'DM Mono',monospace;font-size:1.6rem;font-weight:700}
+.sec-box.mcq .sec-score{color:var(--blue)}
+.sec-box.sql .sec-score{color:var(--purple)}
+.sec-box.code .sec-score{color:#059669}
+.sec-total{font-size:.72rem;color:var(--muted)}
+.sec-bar-wrap{height:5px;background:#e5e7eb;border-radius:3px;margin-top:.5rem;overflow:hidden}
+.sec-bar{height:100%;border-radius:3px;transition:width .8s ease}
+.sec-box.mcq .sec-bar{background:var(--blue)}
+.sec-box.sql .sec-bar{background:var(--purple)}
+.sec-box.code .sec-bar{background:#059669}
+/* INTEGRITY GRID */
+.integrity-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.6rem}
+.ig-item{background:#f9fafb;border:1.5px solid var(--border);border-radius:8px;padding:.7rem .8rem;text-align:center}
+.ig-item.warn{background:#fffbeb;border-color:#fde68a}
+.ig-item.danger{background:#fef2f2;border-color:#fca5a5}
+.ig-title{font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.3rem}
+.ig-val{font-family:'DM Mono',monospace;font-size:1.3rem;font-weight:700;color:var(--text)}
+.ig-item.warn .ig-val{color:var(--orange)}
+.ig-item.danger .ig-val{color:var(--red)}
+.ig-sub{font-size:.63rem;color:var(--muted);margin-top:.15rem}
+/* MCQ REVIEW */
+.q-result{padding:.8rem;border-radius:8px;margin-bottom:.6rem;border:1px solid var(--border)}
+.q-result.correct{border-color:#86efac;background:#f0fdf4}
+.q-result.wrong{border-color:#fca5a5;background:#fef2f2}
+.q-result.skipped{background:#f9f9f9}
+.qr-num{font-size:.67rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.22rem}
+.qr-num.correct{color:var(--green)}.qr-num.wrong{color:var(--red)}.qr-num.skipped{color:var(--muted)}
+.qr-text{font-size:.85rem;font-weight:500;color:var(--text);margin-bottom:.35rem}
+.qr-ans{font-size:.78rem}
+/* SQL RESULTS */
+.sql-result-row{padding:.7rem .9rem;border-radius:8px;border:1px solid var(--border);margin-bottom:.5rem}
+.sql-result-row.pass{border-color:#86efac;background:#f0fdf4}
+.sql-result-row.fail{border-color:#fca5a5;background:#fef2f2}
+.sql-result-row.skip{background:#f9f9f9}
+.sr-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem}
+.sr-title{font-size:.82rem;font-weight:600;color:var(--text)}
+.sr-badge{font-size:.65rem;font-weight:700;padding:.15rem .5rem;border-radius:10px}
+.sr-badge.pass{background:#d1fae5;color:#065f46}
+.sr-badge.fail{background:#fee2e2;color:#991b1b}
+.sr-badge.skip{background:#f3f4f6;color:var(--muted)}
+/* CODE RESULTS */
+.cr-row{padding:.7rem .9rem;border-radius:8px;border:1px solid var(--border);margin-bottom:.5rem}
+.cr-row.pass{border-color:#86efac;background:#f0fdf4}
+.cr-row.partial{border-color:#fde68a;background:#fffbeb}
+.cr-row.fail{border-color:#fca5a5;background:#fef2f2}
+.cr-row.skip{background:#f9f9f9}
+.cr-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.25rem}
+.cr-title{font-size:.82rem;font-weight:600;color:var(--text)}
+.cr-tcs{display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.3rem}
+.tc-dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+.tc-dot.pass{background:#4ade80}.tc-dot.fail{background:#f87171}
+/* TRANSCRIPT */
+.tr-list{display:flex;flex-direction:column;gap:.3rem;max-height:200px;overflow-y:auto}
+.tr-entry{font-size:.78rem;padding:.35rem .6rem;background:#f8faff;border-left:3px solid var(--blue);border-radius:0 5px 5px 0}
+.tr-time{color:var(--muted);font-family:'DM Mono',monospace;font-size:.7rem;margin-right:.4rem}
+/* SCREENSHOTS */
+.ss-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.ss-img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:7px;border:1px solid var(--border);cursor:pointer}
+.ss-img:hover{opacity:.85}
+/* EMAIL NOTICE */
+.email-notice{background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:10px;padding:.9rem 1.1rem;margin-bottom:1rem;display:flex;align-items:center;gap:.7rem;font-size:.85rem;color:var(--dark)}
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+{% set s = session %}
+{% set is_term = s.get('terminated', False) %}
+{% set score = s.get('score', 0) %}
+{% set total = s.get('total_marks', 0) %}
+{% set pct = (score / total * 100) | round(1) if total else 0 %}
+{% set cs = s.get('cheating_score', 0) %}
+{% set mcq_score = s.get('mcq_score', 0) %}
+{% set sql_score = s.get('sql_score', 0) %}
+{% set code_score = s.get('code_score', 0) %}
+{% set mcq_total = s.get('mcq_total', 0) %}
+{% set sql_total = s.get('sql_total', 0) %}
+{% set code_total = s.get('code_total', 0) %}
+{% set passed = pct >= 50 and not is_term %}
+
+<!-- EMAIL NOTICE -->
+<div class="email-notice">
+  📧 Your detailed result has been emailed to <strong>{{ s.get('email','') }}</strong>
+</div>
+
+<!-- TERMINATION BANNER -->
+{% if is_term %}
+<div class="term-banner">
+  <div class="term-banner-title">⛔ Exam Terminated</div>
+  <div class="term-reason">{{ s.get('terminate_reason','Exam was terminated due to violation.') }}</div>
+  <div class="term-counts">
+    <div class="tcount"><div class="tcount-val">{{ s.get('phone_count',0) }}</div><div class="tcount-lbl">📵 Phone</div></div>
+    <div class="tcount"><div class="tcount-val">{{ s.get('multi_person_count',0) }}</div><div class="tcount-lbl">👥 Multi</div></div>
+    <div class="tcount"><div class="tcount-val">{{ s.get('face_mismatch_count',0) }}</div><div class="tcount-lbl">🪪 Face</div></div>
+    <div class="tcount"><div class="tcount-val">{{ s.get('tab_switch_count',0) }}</div><div class="tcount-lbl">🔀 Tab</div></div>
+    {% if s.get('terminate_time') %}
+    <div class="tcount"><div class="tcount-val" style="font-size:.85rem">{{ s.get('terminate_time','')[:16] | replace('T',' ') }}</div><div class="tcount-lbl">Time</div></div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-top">
+    <div>
+      <div class="hero-name">{{ s.get('username','') }}</div>
+      <div class="hero-email">{{ s.get('email','') }}</div>
+    </div>
+    <div class="status-pill {% if is_term %}pill-term{% elif passed %}pill-pass{% else %}pill-fail{% endif %}">
+      {% if is_term %}⛔ TERMINATED{% elif passed %}✅ PASS{% else %}❌ FAIL{% endif %}
+    </div>
+  </div>
+  <div class="score-display">
+    <div class="score-big">{{ score }}</div>
+    <div class="score-total">out of {{ total }} marks</div>
+    <div class="score-pct">{{ pct }}%</div>
+  </div>
+  <div class="hero-stats">
+    <div class="hstat"><div class="hstat-val">{{ mcq_score }}/{{ mcq_total }}</div><div class="hstat-lbl">📝 MCQ</div></div>
+    <div class="hstat"><div class="hstat-val">{{ sql_score }}/{{ sql_total }}</div><div class="hstat-lbl">🗄️ SQL</div></div>
+    <div class="hstat"><div class="hstat-val">{{ code_score }}/{{ code_total }}</div><div class="hstat-lbl">💻 Code</div></div>
+  </div>
+  <div class="time-row">
+    {% if s.get('start_time') %}Started: {{ s.get('start_time','')[:16]|replace('T',' ') }}{% endif %}
+    {% if s.get('end_time') %} &nbsp;→&nbsp; Ended: {{ s.get('end_time','')[:16]|replace('T',' ') }}{% endif %}
+  </div>
+</div>
+
+<!-- SECTION BREAKDOWN -->
+<div class="card">
+  <h2>📊 Section Breakdown</h2>
+  <div class="section-grid">
+    <div class="sec-box mcq">
+      <div class="sec-icon">📝</div>
+      <div class="sec-label">Part A — MCQ</div>
+      <div class="sec-score">{{ mcq_score }}</div>
+      <div class="sec-total">/ {{ mcq_total }} marks</div>
+      <div class="sec-bar-wrap"><div class="sec-bar" style="width:{{ (mcq_score/mcq_total*100)|round|int if mcq_total else 0 }}%"></div></div>
+    </div>
+    <div class="sec-box sql">
+      <div class="sec-icon">🗄️</div>
+      <div class="sec-label">Part B — SQL</div>
+      <div class="sec-score">{{ sql_score }}</div>
+      <div class="sec-total">/ {{ sql_total }} marks</div>
+      <div class="sec-bar-wrap"><div class="sec-bar" style="width:{{ (sql_score/sql_total*100)|round|int if sql_total else 0 }}%"></div></div>
+    </div>
+    <div class="sec-box code">
+      <div class="sec-icon">💻</div>
+      <div class="sec-label">Part C — Coding</div>
+      <div class="sec-score">{{ code_score }}</div>
+      <div class="sec-total">/ {{ code_total }} marks</div>
+      <div class="sec-bar-wrap"><div class="sec-bar" style="width:{{ (code_score/code_total*100)|round|int if code_total else 0 }}%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- INTEGRITY -->
+<div class="card">
+  <h2>🔒 Integrity Report</h2>
+  <div class="integrity-grid">
+    {% set ph=s.get('phone_count',0) %}
+    <div class="ig-item {% if ph>=3 %}danger{% elif ph>0 %}warn{% endif %}">
+      <div class="ig-title">📵 Phone</div><div class="ig-val">{{ ph }}</div>
+      <div class="ig-sub">Limit 3{% if ph>=3 %} · EXCEEDED{% endif %}</div>
+    </div>
+    {% set mu=s.get('multi_person_count',0) %}
+    <div class="ig-item {% if mu>=3 %}danger{% elif mu>0 %}warn{% endif %}">
+      <div class="ig-title">👥 Multi-Person</div><div class="ig-val">{{ mu }}</div>
+      <div class="ig-sub">Limit 3{% if mu>=3 %} · EXCEEDED{% endif %}</div>
+    </div>
+    {% set fa=s.get('face_mismatch_count',0) %}
+    <div class="ig-item {% if fa>=3 %}danger{% elif fa>0 %}warn{% endif %}">
+      <div class="ig-title">🪪 Face Mismatch</div><div class="ig-val">{{ fa }}</div>
+      <div class="ig-sub">Limit 3{% if fa>=3 %} · EXCEEDED{% endif %}</div>
+    </div>
+    {% set ta=s.get('tab_switch_count',0) %}
+    <div class="ig-item {% if ta>=2 %}danger{% elif ta>0 %}warn{% endif %}">
+      <div class="ig-title">🔀 Tab Switches</div><div class="ig-val">{{ ta }}</div>
+      <div class="ig-sub">Limit 2{% if ta>=2 %} · EXCEEDED{% endif %}</div>
+    </div>
+    <div class="ig-item {% if cs>=60 %}danger{% elif cs>=30 %}warn{% endif %}">
+      <div class="ig-title">⚠ Cheat Score</div><div class="ig-val">{{ cs }}%</div>
+      <div class="ig-sub">{% if cs<25 %}Low risk{% elif cs<50 %}Moderate{% elif cs<75 %}High{% else %}Critical{% endif %}</div>
+    </div>
+    <div class="ig-item">
+      <div class="ig-title">📷 Screenshots</div><div class="ig-val">{{ s.get('screenshots',[])|length }}</div>
+      <div class="ig-sub">Captured during exam</div>
+    </div>
+  </div>
+</div>
+
+<!-- PART A REVIEW -->
+<div class="card">
+  <h2>📝 Part A — MCQ Review</h2>
+  {% for q in mcq_questions %}
+  {% set qid = q.id | string %}
+  {% set user_ans = s.get('answers',{}).get(qid) %}
+  {% if user_ans is not none %}
+    {% set is_correct = (user_ans | int) == q.correct %}
+    <div class="q-result {% if is_correct %}correct{% else %}wrong{% endif %}">
+      <div class="qr-num {% if is_correct %}correct{% else %}wrong{% endif %}">
+        {% if is_correct %}✅{% else %}❌{% endif %} Q{{ loop.index }}
+      </div>
+      <div class="qr-text">{{ q.question }}</div>
+      <div class="qr-ans">
+        <span style="color:var(--muted)">Your answer:</span> <strong>{{ q.options[user_ans | int] }}</strong>
+        {% if not is_correct %}
+        &nbsp;·&nbsp; <span style="color:var(--muted)">Correct:</span> <strong style="color:var(--green)">{{ q.options[q.correct] }}</strong>
+        {% endif %}
+      </div>
+    </div>
+  {% else %}
+    <div class="q-result skipped">
+      <div class="qr-num skipped">⬜ Q{{ loop.index }} — Not answered</div>
+      <div class="qr-text">{{ q.question }}</div>
+      <div class="qr-ans"><span style="color:var(--muted)">Correct answer:</span> <strong style="color:var(--green)">{{ q.options[q.correct] }}</strong></div>
+    </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<!-- PART B REVIEW -->
+{% if sql_questions %}
+<div class="card">
+  <h2>🗄️ Part B — SQL Review</h2>
+  {% for q in sql_questions %}
+  {% set qid = q.id | string %}
+  {% set user_sql = s.get('sql_answers',{}).get(qid, '') %}
+  {% set res = s.get('sql_results',{}).get(q.id) %}
+  <div class="sql-result-row {% if res and res.passed %}pass{% elif res %}fail{% elif user_sql %}fail{% else %}skip{% endif %}">
+    <div class="sr-header">
+      <div class="sr-title">SQL {{ loop.index }} — {{ q.question[:60] }}{% if q.question|length > 60 %}…{% endif %}</div>
+      <span class="sr-badge {% if res and res.passed %}pass{% elif res %}fail{% else %}skip{% endif %}">
+        {% if res and res.passed %}✅ Correct ({{ q.marks }} marks){% elif res %}❌ Wrong (0 marks){% else %}⬜ Not attempted{% endif %}
+      </span>
+    </div>
+    {% if user_sql %}
+    <div style="font-size:.75rem;color:var(--muted);margin-top:.3rem">Your query:</div>
+    <div style="font-family:'DM Mono',monospace;font-size:.75rem;background:#f8faff;padding:.4rem .6rem;border-radius:5px;margin-top:.2rem;word-break:break-all">{{ user_sql }}</div>
+    {% endif %}
+    {% if res and res.error %}
+    <div style="font-size:.73rem;color:var(--red);margin-top:.3rem">Error: {{ res.error }}</div>
+    {% endif %}
+    {% if res and res.output %}
+    <div style="font-size:.72rem;color:var(--muted);margin-top:.3rem">Output: {{ res.output | length }} row(s)</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- PART C REVIEW -->
+{% if coding_questions %}
+<div class="card">
+  <h2>💻 Part C — Coding Review</h2>
+  {% for q in coding_questions %}
+  {% set qid = q.id | string %}
+  {% set sub = s.get('code_answers',{}).get(qid) %}
+  {% set res = s.get('code_results',{}).get(q.id) %}
+  {% if res %}
+    {% set pf = res.passed %}{% set tf = res.total %}
+    {% set row_class = 'pass' if pf == tf else ('partial' if pf > 0 else 'fail') %}
+    {% set earned = (q.marks * pf / tf) | round | int %}
+  {% else %}
+    {% set row_class = 'skip' %}{% set earned = 0 %}{% set pf = 0 %}{% set tf = q.test_cases | length %}
+  {% endif %}
+  <div class="cr-row {{ row_class }}">
+    <div class="cr-header">
+      <div class="cr-title">Problem {{ loop.index }} — {{ q.title }}</div>
+      <span style="font-size:.72rem;font-weight:700;color:{% if row_class == 'pass' %}var(--green){% elif row_class == 'partial' %}var(--orange){% elif row_class == 'fail' %}var(--red){% else %}var(--muted){% endif %}">
+        {{ earned }}/{{ q.marks }} marks &nbsp;·&nbsp;
+        {% if res %}{{ pf }}/{{ tf }} tests{% else %}Not attempted{% endif %}
+      </span>
+    </div>
+    {% if sub %}
+    <div style="font-size:.72rem;color:var(--muted)">Language: <strong>{{ sub.language | upper if sub.language else 'N/A' }}</strong></div>
+    {% endif %}
+    {% if res %}
+    <div class="cr-tcs">
+      {% for tc in res.get('test_results',[]) %}
+      <span class="tc-dot {% if tc.passed %}pass{% else %}fail{% endif %}" title="Test {{ loop.index }}: {% if tc.passed %}Pass{% else %}Fail{% endif %}"></span>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- SCREENSHOTS -->
+{% set ss_list = s.get('screenshots',[]) %}
+{% if ss_list %}
+<div class="card">
+  <h2>📸 Evidence Screenshots ({{ ss_list | length }})</h2>
+  <div class="ss-grid">
+    {% for ss in ss_list %}
+    <div>
+      <img class="ss-img" src="/admin/screenshot/{{ ss.file }}" alt="{{ ss.reason }}"
+           onclick="window.open(this.src,'_blank')"
+           onerror="this.style.display='none'"/>
+      <div style="font-size:.62rem;color:var(--muted);text-align:center;margin-top:.2rem">{{ ss.reason }} · {{ (ss.get('time',''))[:16]|replace('T',' ') }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- TRANSCRIPT -->
+{% set tr = s.get('transcript',[]) %}
+{% if tr %}
+<div class="card">
+  <h2>🎤 Speech Transcript ({{ tr | length }} event{{ 's' if tr | length != 1 else '' }})</h2>
+  <div class="tr-list">
+    {% for entry in tr %}
+    <div class="tr-entry">
+      <span class="tr-time">{{ (entry.get('time',''))[:19]|replace('T',' ') }}</span>
+      "{{ entry.get('text', entry.get('txt','')) }}"
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+</div><!-- /page-wrap -->
+</body>
+</html>

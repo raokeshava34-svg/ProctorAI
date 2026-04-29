@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Admin Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cog-blue:#1261ab;--cog-dark:#0a3d6b;--bg:#0d1b2a;--card:#132035;--border:#1e3050;--text:#e2ecf5;--muted:#5d7d9a}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 0%,rgba(18,97,171,.15),transparent);pointer-events:none}
+.card{background:var(--card);border:1px solid var(--border);border-radius:18px;width:100%;max-width:420px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.card-top{background:linear-gradient(135deg,#0a3d6b,#1261ab);padding:2.5rem;text-align:center}
+.shield{font-size:3rem;display:block;margin-bottom:.8rem}
+.card-top h1{color:white;font-size:1.4rem;font-weight:700;margin-bottom:.3rem}
+.card-top p{color:rgba(255,255,255,.65);font-size:.82rem}
+.card-body{padding:2rem}
+.field{margin-bottom:1.2rem}
+.field label{display:block;font-size:.78rem;font-weight:600;color:var(--muted);margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.08em}
+.field input{width:100%;background:#0d1b2a;border:1.5px solid var(--border);border-radius:8px;padding:.75rem 1rem;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);transition:border-color .2s}
+.field input:focus{outline:none;border-color:var(--cog-blue);box-shadow:0 0 0 3px rgba(18,97,171,.15)}
+.btn{width:100%;padding:.85rem;background:var(--cog-blue);color:white;border:none;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s}
+.btn:hover{background:#0e52a0;transform:translateY(-1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.err{background:rgba(211,47,47,.12);border:1px solid rgba(211,47,47,.3);color:#ef5350;border-radius:8px;padding:.7rem 1rem;font-size:.82rem;margin-bottom:1rem;display:none}
+.hint{text-align:center;margin-top:1.2rem;font-size:.78rem;color:var(--muted)}
+.hint code{color:#5b9bd5;font-family:monospace}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-top">
+    <span class="shield">🛡️</span>
+    <h1>Admin Portal</h1>
+    <p>Cognizant Proctoring System — Restricted Access</p>
+  </div>
+  <div class="card-body">
+    <div class="err" id="err">Invalid username or password</div>
+    <div class="field">
+      <label>Username</label>
+      <input type="text" id="username" placeholder="admin" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••"/>
+    </div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
+    <div class="hint">Default: <code>admin</code> / <code>admin123</code></div>
+  </div>
+</div>
+<script>
+async function doLogin(){
+  const u=document.getElementById('username').value;
+  const p=document.getElementById('password').value;
+  const err=document.getElementById('err');
+  err.style.display='none';
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='Signing in…';
+  const res=await fetch('/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
+  const d=await res.json();
+  if(d.redirect) window.location.href=d.redirect;
+  else{err.style.display='block';btn.disabled=false;btn.textContent='Sign In →';}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+</script>
+</body>
+</html>

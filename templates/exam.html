@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Online Assessment — ProctorAI</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --blue:#2563eb;--dark:#1e3a8a;--light:#eff6ff;
+  --red:#dc2626;--green:#16a34a;--orange:#ea580c;--purple:#7c3aed;
+  --bg:#f0f4f9;--surface:#fff;--text:#1a2332;--muted:#6b7280;--border:#d1d9e0;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;user-select:none}
+/* HEADER */
+.exam-header{background:#fff;border-bottom:1px solid var(--border);padding:0 1.2rem;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:300;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+.logo-text{font-size:.95rem;font-weight:700;color:var(--text)}
+.timer-wrap{display:flex;align-items:center;gap:.5rem;background:var(--light);border:1.5px solid #bfdbfe;border-radius:8px;padding:.3rem .75rem}
+.timer-val{font-family:'DM Mono',monospace;font-size:1rem;font-weight:700;color:var(--dark)}
+.timer-wrap.warn .timer-val{color:var(--orange)}
+.timer-wrap.danger{background:#fef2f2;border-color:#fca5a5;animation:tpulse 1s infinite}
+.timer-wrap.danger .timer-val{color:var(--red)}
+@keyframes tpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.hdr-right{display:flex;align-items:center;gap:.6rem}
+.score-chip{font-size:.78rem;font-weight:600;background:var(--light);color:var(--dark);padding:.28rem .65rem;border-radius:20px;border:1px solid #bfdbfe}
+.hbtn{padding:.28rem .7rem;border-radius:6px;border:1.5px solid var(--border);background:#fff;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;color:var(--text);cursor:pointer;transition:all .2s}
+.hbtn:hover{border-color:var(--blue);color:var(--blue)}
+.hbtn.danger{border-color:var(--red);color:var(--red)}
+/* LAYOUT */
+.exam-layout{display:grid;grid-template-columns:1fr 290px;height:calc(100vh - 57px);overflow:hidden}
+.questions-pane{overflow-y:auto;padding:0 0 1rem}
+.camera-pane{border-left:1px solid var(--border);background:#fff;display:flex;flex-direction:column;overflow:hidden}
+/* PART TABS */
+.part-tabs{display:flex;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100}
+.pt-tab{flex:1;padding:.65rem .4rem;text-align:center;font-size:.78rem;font-weight:600;cursor:pointer;border-bottom:3px solid transparent;color:var(--muted);transition:all .2s;position:relative}
+.pt-tab.mcq.active{color:var(--blue);border-color:var(--blue);background:#eff6ff}
+.pt-tab.sql.active{color:var(--purple);border-color:var(--purple);background:#f5f3ff}
+.pt-tab.code.active{color:#059669;border-color:#059669;background:#ecfdf5}
+.pt-badge{display:none;position:absolute;top:3px;right:6px;background:var(--red);color:#fff;border-radius:10px;font-size:.58rem;padding:.1rem .32rem;font-weight:700}
+.part-section{display:none;padding:.8rem 1rem}.part-section.active{display:block}
+/* MCQ */
+.section-header{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:.5rem 0 .5rem;border-bottom:1px solid var(--border);margin-bottom:.9rem}
+.q-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:1.1rem;margin-bottom:.8rem}
+.q-card.active-q{border-color:var(--blue)}
+.q-number{font-size:.67rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem}
+.q-marks{float:right;font-size:.63rem;background:var(--light);color:var(--blue);padding:.1rem .42rem;border-radius:4px;font-weight:600}
+.q-text{font-size:.9rem;font-weight:500;color:var(--text);line-height:1.55;margin-bottom:.8rem}
+.options{display:flex;flex-direction:column;gap:.42rem}
+.opt-label{display:flex;align-items:center;gap:.65rem;padding:.55rem .8rem;border:1.5px solid var(--border);border-radius:7px;cursor:pointer;transition:all .2s;font-size:.85rem}
+.opt-label:hover{border-color:var(--blue);background:var(--light)}
+.opt-label.selected{border-color:var(--blue);background:var(--light);font-weight:600}
+.opt-radio{width:15px;height:15px;accent-color:var(--blue);flex-shrink:0}
+/* SQL */
+.sql-card{background:#fff;border:1.5px solid #c4b5fd;border-radius:10px;padding:1.1rem;margin-bottom:1rem}
+.sql-q-num{font-size:.67rem;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.sql-q-text{font-size:.9rem;font-weight:500;color:var(--text);line-height:1.5;margin-bottom:.6rem}
+.sql-hint{font-size:.74rem;color:var(--muted);background:#faf5ff;border:1px solid #e9d5ff;border-radius:6px;padding:.38rem .7rem;margin-bottom:.65rem}
+.sql-editor{width:100%;min-height:88px;font-family:'DM Mono',monospace;font-size:.82rem;color:#1a1a2e;background:#f8faff;border:1.5px solid #c4b5fd;border-radius:7px;padding:.6rem .8rem;resize:vertical;line-height:1.5;outline:none}
+.sql-editor:focus{border-color:var(--purple);background:#fff}
+.sql-btn-row{display:flex;gap:.5rem;margin-top:.5rem;align-items:center}
+.run-btn{padding:.38rem .9rem;border-radius:7px;border:none;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;transition:all .2s}
+.run-sql{background:#7c3aed;color:#fff}.run-sql:hover{background:#6d28d9}
+.run-code-btn{background:#059669;color:#fff}.run-code-btn:hover{background:#047857}
+.run-tests-btn{background:#0284c7;color:#fff}.run-tests-btn:hover{background:#0369a1}
+.out-box{margin-top:.6rem;background:#1e1e2e;border-radius:7px;padding:.6rem .8rem;font-family:'DM Mono',monospace;font-size:.74rem;color:#a9b1d6;max-height:160px;overflow-y:auto;display:none}
+.out-box.show{display:block}
+/* CODE */
+.code-card{background:#fff;border:1.5px solid #a7f3d0;border-radius:10px;padding:1.1rem;margin-bottom:1rem}
+.code-q-num{font-size:.67rem;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem}
+.code-title{font-size:.92rem;font-weight:700;color:var(--text);margin-bottom:.28rem}
+.code-q-text{font-size:.86rem;font-weight:400;color:var(--text);line-height:1.5;margin-bottom:.5rem}
+.code-hint{font-size:.73rem;color:var(--muted);background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:.35rem .65rem;margin-bottom:.6rem}
+.lang-bar{display:flex;align-items:center;gap:.6rem;margin-bottom:.45rem}
+.lang-select{padding:.28rem .55rem;border:1.5px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;font-size:.8rem;background:#fff;color:var(--text);cursor:pointer}
+.tc-info{font-size:.72rem;color:var(--muted)}
+.code-editor{width:100%;min-height:155px;font-family:'DM Mono',monospace;font-size:.82rem;color:#e2e8f0;background:#1e1e2e;border:1.5px solid #a7f3d0;border-radius:7px;padding:.7rem .85rem;resize:vertical;line-height:1.55;outline:none;tab-size:4}
+.code-editor:focus{border-color:#059669}
+.code-btn-row{display:flex;gap:.5rem;margin-top:.5rem;flex-wrap:wrap;align-items:center}
+.stdin-label{font-size:.7rem;color:var(--muted);margin-top:.45rem;display:block}
+.code-stdin{width:100%;font-family:'DM Mono',monospace;font-size:.78rem;background:#f8faff;border:1.5px solid var(--border);border-radius:6px;padding:.38rem .65rem;resize:none;outline:none;min-height:36px}
+.tc-row{display:flex;align-items:center;gap:.5rem;padding:.2rem 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:.72rem}
+.tc-pass{color:#6ee7b7}.tc-fail{color:#f87171}
+.stdout-blk{color:#e2e8f0;white-space:pre-wrap;margin-top:.35rem;padding:.3rem .45rem;background:rgba(255,255,255,.05);border-radius:4px;font-size:.74rem}
+.err-blk{color:#f87171;white-space:pre-wrap;margin-top:.3rem;font-size:.72rem}
+/* CAMERA */
+.cam-section{padding:.65rem;flex-shrink:0}
+.cam-title{font-size:.67rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.4rem}
+.cam-wrap{position:relative;border-radius:9px;overflow:hidden;background:#0a0a1a;aspect-ratio:4/3}
+#liveVideo{width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+#camCanvas{position:absolute;inset:0;width:100%;height:100%}
+.cam-badges{display:flex;gap:.3rem;flex-wrap:wrap;margin-top:.38rem}
+.cbadge{font-size:.6rem;font-weight:700;padding:.15rem .45rem;border-radius:20px;border:1.5px solid}
+.b-ok{background:#d1fae5;color:#065f46;border-color:#6ee7b7}
+.b-warn{background:#fef2f2;color:#991b1b;border-color:#fca5a5;animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+/* VIOLATION COUNTERS */
+.vc-section{padding:.45rem .65rem;border-top:1px solid var(--border)}
+.vc-row{display:flex;gap:.32rem}
+.vc-item{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:7px;padding:.28rem .35rem;text-align:center}
+.vc-val{font-family:'DM Mono',monospace;font-size:1rem;font-weight:700;color:var(--text)}
+.vc-lbl{font-size:.52rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.vc-item.hit{border-color:var(--red);background:#fef2f2}
+.vc-item.hit .vc-val{color:var(--red)}
+/* VLOG */
+.vlog-section{flex:1;overflow-y:auto;padding:.45rem .65rem;border-top:1px solid var(--border)}
+.vlog-title{font-size:.63rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.3rem}
+.vlog-entry{font-size:.65rem;color:var(--text);padding:.2rem .38rem;border-radius:4px;margin-bottom:.18rem;border-left:3px solid var(--border)}
+.vlog-phone{border-color:var(--red);background:#fef2f2}
+.vlog-multi{border-color:var(--orange);background:#fff7ed}
+.vlog-face{border-color:var(--purple);background:#faf5ff}
+.vlog-voice{border-color:var(--blue);background:var(--light)}
+.vlog-tab{border-color:#0891b2;background:#ecfeff}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:none;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:#fff;border-radius:14px;width:92%;max-width:460px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden}
+.modal-hdr{padding:1rem 1.2rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-hdr h3{font-size:.95rem;font-weight:700;color:var(--text)}
+.modal-body{padding:1.1rem 1.2rem}
+.modal-row{display:flex;gap:.5rem;margin-top:.8rem}
+.mbtn{flex:1;padding:.6rem;border-radius:8px;border:none;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer}
+.mbtn-red{background:var(--red);color:#fff}.mbtn-ghost{background:#f3f4f6;color:var(--text)}
+.sm-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.45rem;margin-bottom:.8rem}
+.sm-box{text-align:center;padding:.5rem;background:var(--light);border-radius:8px}
+.sm-val{font-family:'DM Mono',monospace;font-size:1.4rem;font-weight:700;color:var(--blue)}
+.sm-lbl{font-size:.67rem;color:var(--muted)}
+/* OVERLAYS */
+#enrolOverlay{position:fixed;inset:0;z-index:99999;background:rgba(10,30,60,.96);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+#terminateOverlay{position:fixed;inset:0;z-index:99999;background:rgba(8,8,8,.97);display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+#terminateOverlay.show{display:flex}
+.to-title{font-size:1.7rem;font-weight:700;color:#fff;margin:.4rem 0}
+.to-reason{font-size:.9rem;color:rgba(255,255,255,.65);margin-bottom:1.3rem;max-width:420px}
+.to-counts{display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;margin-bottom:1.3rem}
+.to-count{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:.55rem 1rem;min-width:76px}
+.to-count-val{font-family:'DM Mono',monospace;font-size:1.5rem;font-weight:700;color:#fff}
+.to-count-lbl{font-size:.58rem;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;margin-top:.08rem}
+.to-btn{background:#2563eb;color:#fff;border:none;padding:.7rem 1.8rem;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;cursor:pointer}
+.tab-warn{position:fixed;top:54px;left:50%;transform:translateX(-50%);background:#dc2626;color:#fff;padding:.5rem 1.4rem;border-radius:0 0 10px 10px;font-size:.8rem;font-weight:700;z-index:500;display:none}
+.vflash{position:fixed;inset:0;pointer-events:none;z-index:8000;border:6px solid transparent;transition:border-color .15s}
+.phone-viol{border-color:rgba(220,38,38,.7)}
+.multi-viol{border-color:rgba(234,88,12,.7)}
+.face-viol{border-color:rgba(124,58,237,.7)}
+.prog-bar{height:3px;background:#e5e7eb;position:sticky;top:54px;z-index:200}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--blue),#059669);transition:width .4s}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid rgba(0,0,0,.15);border-top-color:currentColor;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:.3rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(max-width:860px){.exam-layout{grid-template-columns:1fr}.camera-pane{display:none}}
+/* Fullscreen overlay prompt */
+#fsPrompt{position:fixed;inset:0;z-index:199999;background:rgba(10,20,50,.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem}
+#fsPrompt h2{color:#fff;font-size:1.5rem;font-weight:700;margin-bottom:.6rem}
+#fsPrompt p{color:rgba(255,255,255,.65);font-size:.9rem;margin-bottom:1.5rem;max-width:420px;line-height:1.6}
+#fsBtn{background:#2563eb;color:#fff;border:none;padding:.85rem 2.5rem;border-radius:10px;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s}
+#fsBtn:hover{background:#1e3a8a}
+/* Fullscreen exit warning */
+#fsWarn{position:fixed;top:0;left:0;right:0;z-index:99997;background:#dc2626;color:#fff;text-align:center;padding:.6rem;font-size:.88rem;font-weight:700;display:none}
+/* Live STT indicator */
+#sttBar{position:fixed;bottom:0;left:0;right:0;z-index:500;background:rgba(10,20,40,.85);backdrop-filter:blur(4px);padding:.4rem 1rem;display:flex;align-items:center;gap:.7rem;font-size:.75rem;color:rgba(255,255,255,.7);transform:translateY(100%);transition:transform .3s}
+#sttBar.show{transform:translateY(0)}
+.stt-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:sttPulse 1s infinite}
+@keyframes sttPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+#sttText{flex:1;font-family:'DM Mono',monospace;font-size:.72rem;color:#e2e8f0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sttStatus{font-size:.68rem;color:rgba(255,255,255,.4)}
+</style>
+</head>
+<body>
+
+<!-- FULLSCREEN PROMPT (shown before exam starts) -->
+<div id="fsPrompt">
+  <div style="font-size:3rem;margin-bottom:.8rem">🖥️</div>
+  <h2>Enter Full Screen to Begin</h2>
+  <p>This exam must be taken in full screen mode.<br/>
+  Exiting full screen will be recorded as a violation and may terminate your exam.</p>
+  <button id="fsBtn" onclick="enterFullscreen()">Enter Full Screen &amp; Start Exam →</button>
+  <div style="font-size:.72rem;color:rgba(255,255,255,.35);margin-top:1rem">Press F11 or click the button above</div>
+</div>
+
+<!-- FULLSCREEN EXIT WARNING -->
+<div id="fsWarn">⚠ You exited Full Screen! Return immediately — this is recorded as a violation.</div>
+
+<!-- LIVE STT BAR (bottom of screen) -->
+<div id="sttBar">
+  <div class="stt-dot"></div>
+  <span style="color:rgba(255,255,255,.5);font-size:.7rem">🎤 Listening:</span>
+  <span id="sttText">— speak and it will appear here —</span>
+  <span id="sttStatus">active</span>
+</div>
+
+<!-- ENROLMENT OVERLAY -->
+<div id="enrolOverlay">
+  <div style="font-size:2.4rem;margin-bottom:.5rem">📸</div>
+  <div style="font-size:1.25rem;font-weight:700;color:#fff;margin-bottom:.4rem">Face Registration</div>
+  <div style="font-size:.83rem;color:rgba(255,255,255,.6);margin-bottom:1.2rem;max-width:390px">Position your face clearly in the frame then click <strong style="color:#fff">Capture</strong> to begin.</div>
+  <div style="position:relative;border-radius:12px;overflow:hidden;width:270px;height:202px;background:#111;margin-bottom:1rem;border:2px solid rgba(255,255,255,.15)">
+    <video id="enrolVid" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1)"></video>
+    <canvas id="enrolCvs" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+    <div id="enrolBadge" style="position:absolute;bottom:.35rem;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#6ee7b7;font-size:.62rem;font-weight:700;padding:.15rem .5rem;border-radius:20px;white-space:nowrap">Align your face in frame</div>
+  </div>
+  <div style="display:flex;gap:.65rem;margin-bottom:.7rem">
+    <button id="enrolBtn" onclick="captureEnrolment()" style="background:#2563eb;color:#fff;border:none;padding:.65rem 1.6rem;border-radius:9px;font-family:inherit;font-size:.85rem;font-weight:700;cursor:pointer">📸 Capture &amp; Start</button>
+    <button onclick="skipEnrolment()" style="background:rgba(255,255,255,.1);color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.2);padding:.65rem 1.2rem;border-radius:9px;font-family:inherit;font-size:.8rem;cursor:pointer">Skip →</button>
+  </div>
+  <div id="enrolStatus" style="font-size:.73rem;color:rgba(255,255,255,.38);min-height:1em"></div>
+</div>
+
+<!-- TERMINATION OVERLAY -->
+<div id="terminateOverlay">
+  <div style="font-size:2.8rem;margin-bottom:.3rem">🚫</div>
+  <div class="to-title">Exam Terminated</div>
+  <div class="to-reason" id="toReason">Your exam has been terminated.</div>
+  <div class="to-counts">
+    <div class="to-count"><div class="to-count-val" id="to-phone">0</div><div class="to-count-lbl">Phone</div></div>
+    <div class="to-count"><div class="to-count-val" id="to-multi">0</div><div class="to-count-lbl">Multi</div></div>
+    <div class="to-count"><div class="to-count-val" id="to-face">0</div><div class="to-count-lbl">Face</div></div>
+    <div class="to-count"><div class="to-count-val" id="to-tab">0</div><div class="to-count-lbl">Tab</div></div>
+  </div>
+  <button class="to-btn" onclick="window.location.href='/exam/result/'+SESSION_ID">View My Result →</button>
+  <div style="font-size:.7rem;color:rgba(255,255,255,.28);margin-top:.6rem">Your answers have been saved.</div>
+</div>
+
+<div class="tab-warn" id="tabWarn">⚠ Tab switch detected — return immediately. This is recorded.</div>
+<div class="vflash" id="violFlash"></div>
+
+<!-- HEADER -->
+<div class="exam-header">
+  <div style="display:flex;align-items:center;gap:.8rem">
+    <div class="logo-text">📝 ProctorAI Assessment</div>
+    <span style="font-size:.72rem;color:var(--muted);border-left:1px solid var(--border);padding-left:.7rem">👤 {{ username }}</span>
+  </div>
+  <div class="hdr-right">
+    <div class="timer-wrap" id="timerWrap">
+      <span style="font-size:.7rem;color:var(--muted)">⏱</span>
+      <span class="timer-val" id="timerVal">--:--</span>
+    </div>
+    <span class="score-chip" id="progressChip">0 answered</span>
+    <button class="hbtn" id="fsReBtn" onclick="reenterFullscreen()" title="Return to full screen" style="display:none">⛶ Full Screen</button>
+    <button class="hbtn danger" onclick="confirmSubmit()">Submit Exam</button>
+  </div>
+</div>
+<div class="prog-bar"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+
+<!-- MAIN LAYOUT -->
+<div class="exam-layout">
+  <!-- QUESTIONS -->
+  <div class="questions-pane">
+    <!-- TABS -->
+    <div class="part-tabs">
+      <div class="pt-tab mcq active" id="tab-mcq" onclick="switchPart('mcq')">
+        📝 Part A — MCQ
+        <span class="pt-badge" id="badge-mcq">!</span>
+      </div>
+      <div class="pt-tab sql" id="tab-sql" onclick="switchPart('sql')">
+        🗄️ Part B — SQL
+        <span class="pt-badge" id="badge-sql">!</span>
+      </div>
+      <div class="pt-tab code" id="tab-code" onclick="switchPart('code')">
+        💻 Part C — Code
+        <span class="pt-badge" id="badge-code">!</span>
+      </div>
+    </div>
+
+    <!-- PART A -->
+    <div class="part-section active" id="part-mcq">
+      <div class="section-header">Part A — Multiple Choice &nbsp;<span style="font-weight:400;color:var(--muted)">({{ mcq_questions|length }} questions · {{ mcq_questions|sum(attribute='marks') }} total marks)</span></div>
+      {% for q in mcq_questions %}
+      <div class="q-card" id="qcard-{{q.id}}">
+        <div class="q-number">
+          Q{{ loop.index }}
+          <span style="font-size:.62rem;font-weight:600;background:#f0f4f9;color:var(--muted);padding:.1rem .45rem;border-radius:10px;margin-left:.4rem">{{ q.section }}</span>
+          <span style="font-size:.6rem;font-weight:600;background:var(--light);color:var(--blue);padding:.1rem .4rem;border-radius:10px;margin-left:.25rem">{{ q.topic }}</span>
+          <span class="q-marks">{{ q.marks }} mark</span>
+        </div>
+        <div class="q-text">{{ q.question }}</div>
+        <div class="options">
+          {% for opt in q.options %}
+          <label class="opt-label" id="opt-{{q.id}}-{{loop.index0}}" onclick="selectMCQ('{{q.id}}',{{loop.index0}},this)">
+            <input type="radio" name="mcq-{{q.id}}" class="opt-radio" value="{{loop.index0}}"/>
+            <span>{{ opt }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- PART B -->
+    <div class="part-section" id="part-sql">
+      <div class="section-header">Part B — SQL Questions &nbsp;<span style="font-weight:400;color:var(--muted)">({{ sql_questions|length }} questions · 5 marks each)</span></div>
+      {% for q in sql_questions %}
+      <div class="sql-card">
+        <div class="sql-q-num">SQL {{ loop.index }} &nbsp;·&nbsp; {{ q.marks }} marks &nbsp;·&nbsp; Topic: {{ q.topic }}</div>
+        <div class="sql-q-text">{{ q.question }}</div>
+        <div class="sql-hint">💡 Hint: {{ q.hint }}</div>
+        <textarea class="sql-editor" id="sql-{{q.id}}" oninput="onSqlChange('{{q.id}}')" spellcheck="false" placeholder="SELECT ..."></textarea>
+        <div class="sql-btn-row">
+          <button class="run-btn run-sql" onclick="testSQL('{{q.id}}')">▶ Run Query</button>
+          <span id="sql-stat-{{q.id}}" style="font-size:.72rem;color:var(--muted)"></span>
+        </div>
+        <div class="out-box" id="sql-out-{{q.id}}"></div>
+      </div>
+      {% endfor %}
+      {% if not sql_questions %}<div style="text-align:center;padding:2rem;color:var(--muted)">No SQL questions in your set.</div>{% endif %}
+    </div>
+
+    <!-- PART C -->
+    <div class="part-section" id="part-code">
+      <div class="section-header">Part C — Coding Problems &nbsp;<span style="font-weight:400;color:var(--muted)">({{ coding_questions|length }} problems · 10 marks each)</span></div>
+      {% for q in coding_questions %}
+      <div class="code-card">
+        <div class="code-q-num">Problem {{ loop.index }} &nbsp;·&nbsp; {{ q.marks }} marks &nbsp;·&nbsp; {{ q.topic }}</div>
+        <div class="code-title">{{ q.title }}</div>
+        <div class="code-q-text">{{ q.question }}</div>
+        <div class="code-hint">💡 {{ q.hint }}</div>
+        <div class="lang-bar">
+          <select class="lang-select" id="lang-{{q.id}}" onchange="onLangChange('{{q.id}}')">
+            <option value="python">Python 3</option>
+            <option value="java">Java</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="javascript">JavaScript</option>
+          </select>
+          <span class="tc-info">{{ q.test_cases|length }} test cases</span>
+        </div>
+        <textarea class="code-editor" id="code-{{q.id}}" oninput="onCodeChange('{{q.id}}')" spellcheck="false">{{ q.template_python }}</textarea>
+        <div class="code-btn-row">
+          <button class="run-btn run-code-btn" onclick="runCode('{{q.id}}')">▶ Run</button>
+          <button class="run-btn run-tests-btn" onclick="runTests('{{q.id}}')">🧪 Test All</button>
+          <span id="code-stat-{{q.id}}" style="font-size:.72rem;color:var(--muted)"></span>
+        </div>
+        <label class="stdin-label">Custom Input (stdin):</label>
+        <textarea class="code-stdin" id="stdin-{{q.id}}" rows="2" placeholder="Enter test input…"></textarea>
+        <div class="out-box" id="code-out-{{q.id}}"></div>
+      </div>
+      {% endfor %}
+      {% if not coding_questions %}<div style="text-align:center;padding:2rem;color:var(--muted)">No coding questions in your set.</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- CAMERA PANE -->
+  <div class="camera-pane">
+    <div class="cam-section">
+      <div class="cam-title">📷 Live Proctoring</div>
+      <div class="cam-wrap">
+        <video id="liveVideo" autoplay muted playsinline></video>
+        <canvas id="camCanvas"></canvas>
+        <div id="camNo" style="display:none;position:absolute;inset:0;background:#111;color:#666;font-size:.75rem;flex-direction:column;align-items:center;justify-content:center;gap:.4rem"><span style="font-size:1.6rem">📷</span>Camera unavailable</div>
+      </div>
+      <div class="cam-badges" id="camBadges">
+        <span class="cbadge b-ok" id="badge-phone-c">📵 No Phone</span>
+        <span class="cbadge b-ok" id="badge-person-c">👤 1 Person</span>
+        <span class="cbadge b-ok" id="badge-face-c">🪪 Match</span>
+      </div>
+    </div>
+    <div class="vc-section">
+      <div class="vc-row">
+        <div class="vc-item" id="vci-ph"><div class="vc-val" id="vv-ph">0</div><div class="vc-lbl">Phone</div></div>
+        <div class="vc-item" id="vci-mu"><div class="vc-val" id="vv-mu">0</div><div class="vc-lbl">Multi</div></div>
+        <div class="vc-item" id="vci-fa"><div class="vc-val" id="vv-fa">0</div><div class="vc-lbl">Face</div></div>
+        <div class="vc-item" id="vci-ta"><div class="vc-val" id="vv-ta">0</div><div class="vc-lbl">Tab</div></div>
+      </div>
+    </div>
+    <div class="vlog-section">
+      <div class="vlog-title">Violation Log</div>
+      <div id="violLog"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SUBMIT MODAL -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal">
+    <div class="modal-hdr"><h3>Submit Exam?</h3><button onclick="closeModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted)">✕</button></div>
+    <div class="modal-body">
+      <div class="sm-grid">
+        <div class="sm-box"><div class="sm-val" id="sm-mcq">0</div><div class="sm-lbl">MCQ answered</div></div>
+        <div class="sm-box"><div class="sm-val" id="sm-sql" style="color:var(--purple)">0</div><div class="sm-lbl">SQL attempted</div></div>
+        <div class="sm-box"><div class="sm-val" id="sm-code" style="color:#059669">0</div><div class="sm-lbl">Code submitted</div></div>
+      </div>
+      <p style="font-size:.83rem;color:var(--muted)">Once submitted you cannot return. Your result will be emailed to you.</p>
+      <div class="modal-row">
+        <button class="mbtn mbtn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="mbtn mbtn-red" onclick="doSubmit()">Submit Now ✅</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DURATION = {{ duration }};
+const SESSION_ID = "{{ session_id }}";
+const MCQ_IDS  = {{ mcq_questions | map(attribute='id') | list | tojson }};
+const SQL_IDS  = {{ sql_questions | map(attribute='id') | list | tojson }};
+const CODE_IDS = {{ coding_questions | map(attribute='id') | list | tojson }};
+
+// Language templates per question
+const LANG_TPL = {
+{% for q in coding_questions %}
+  "{{q.id}}": {
+    python: {{ q.template_python | tojson }},
+    java:   {{ q.template_java | tojson }},
+    c: "#include <stdio.h>\nint main(){\n    // Write your code\n    return 0;\n}\n",
+    cpp: "#include <iostream>\nusing namespace std;\nint main(){\n    // Write your code\n    return 0;\n}\n",
+    javascript: "const lines=require('fs').readFileSync('/dev/stdin','utf8').trim().split('\\n');\n// Write your code\n"
+  },
+{% endfor %}
+};
+
+// State
+let mcqAnswers={}, sqlAnswers={}, codeAnswers={};
+let timeLeft=DURATION, timerInterval=null, isRunning=true, detectLoop=null, _submitting=false;
+let vcPh=0, vcMu=0, vcFa=0, vcTa=0;
+
+// Anti-cheat
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&['c','v','a','u','s'].includes(e.key.toLowerCase()))e.preventDefault();
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&'IJK'.includes(e.key)))e.preventDefault();
+});
+// Track whether we intentionally entered fullscreen (avoid false tab-switch on fullscreen entry)
+let _enteringFullscreen = false;
+
+document.addEventListener('visibilitychange', async () => {
+  // Ignore visibility change caused by entering fullscreen
+  if (_enteringFullscreen) return;
+  if (!document.hidden || !isRunning) return;
+  document.getElementById('tabWarn').style.display = 'block';
+  setTimeout(() => document.getElementById('tabWarn').style.display = 'none', 4000);
+  addViolLog('tab', '🔀 Tab switch detected');
+  captureScreenshot('tab_switch');
+  try {
+    const r = await fetch('/api/tab_switch', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'});
+    const d = await r.json();
+    vcTa = d.tab_switches || vcTa + 1;
+    updateVC();
+    if (d.terminate) handleTermination(d);
+  } catch(e) {}
+});
+
+// Fullscreen change handler
+document.addEventListener('fullscreenchange', () => {
+  _enteringFullscreen = false;
+  if (!isRunning) return;
+  const reBtn = document.getElementById('fsReBtn');
+  if (reBtn) reBtn.style.display = document.fullscreenElement ? 'none' : 'inline-block';
+  if (!document.fullscreenElement) {
+    // Exited fullscreen during exam — warn and record
+    const warn = document.getElementById('fsWarn');
+    warn.style.display = 'block';
+    setTimeout(() => warn.style.display = 'none', 6000);
+    // Show re-enter button in header
+    const reBtn = document.getElementById('fsReBtn');
+    if (reBtn) reBtn.style.display = 'inline-block';
+    addViolLog('tab', '🖥️ Exited full screen');
+    captureScreenshot('fullscreen_exit');
+    // Restart STT (fullscreen exit can kill it)
+    if (isRunning) {
+      setTimeout(() => {
+        try { if(recognition){recognition.onend=null;recognition.stop();} } catch(e){}
+        setTimeout(initSpeechToText, 300);
+      }, 200);
+    }
+    // Count as tab switch
+    fetch('/api/tab_switch', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'})
+      .then(r => r.json())
+      .then(d => { vcTa = d.tab_switches || vcTa + 1; updateVC(); if(d.terminate) handleTermination(d); })
+      .catch(() => {});
+  }
+});
+document.addEventListener('webkitfullscreenchange', () => document.dispatchEvent(new Event('fullscreenchange')));
+
+// TIMER
+function startTimer(){
+  const fmt=n=>String(Math.floor(n)).padStart(2,'0');
+  timerInterval=setInterval(()=>{
+    if(!isRunning){clearInterval(timerInterval);return;}
+    timeLeft--;
+    document.getElementById('timerVal').textContent=`${fmt(timeLeft/60)}:${fmt(timeLeft%60)}`;
+    const w=document.getElementById('timerWrap');
+    if(timeLeft<=0){clearInterval(timerInterval);doSubmit(true);}
+    else if(timeLeft<=300)w.className='timer-wrap danger';
+    else if(timeLeft<=600)w.className='timer-wrap warn';
+  },1000);
+  const fmt2=n=>String(Math.floor(n)).padStart(2,'0');
+  document.getElementById('timerVal').textContent=`${fmt2(DURATION/60)}:${fmt2(DURATION%60)}`;
+}
+
+// TABS
+function switchPart(p){
+  ['mcq','sql','code'].forEach(x=>{
+    document.getElementById(`tab-${x}`).classList.remove('active');
+    document.getElementById(`part-${x}`).classList.remove('active');
+  });
+  document.getElementById(`tab-${p}`).classList.add('active');
+  document.getElementById(`part-${p}`).classList.add('active');
+}
+
+// PROGRESS
+function updateProgress(){
+  const md=Object.keys(mcqAnswers).length;
+  const sd=Object.keys(sqlAnswers).filter(k=>sqlAnswers[k]?.trim()).length;
+  const cd=Object.keys(codeAnswers).filter(k=>codeAnswers[k]?.code?.trim()).length;
+  const total=MCQ_IDS.length+SQL_IDS.length+CODE_IDS.length;
+  const done=md+sd+cd;
+  document.getElementById('progressChip').textContent=`${done} / ${total} answered`;
+  document.getElementById('progFill').style.width=`${total?Math.round(done/total*100):0}%`;
+  document.getElementById('sm-mcq').textContent=md;
+  document.getElementById('sm-sql').textContent=sd;
+  document.getElementById('sm-code').textContent=cd;
+  const tog=(id,cond)=>document.getElementById(id).style.display=cond?'inline':'none';
+  tog('badge-mcq',md<MCQ_IDS.length);
+  tog('badge-sql',sd<SQL_IDS.length);
+  tog('badge-code',cd<CODE_IDS.length);
+  try{sessionStorage.setItem('examState',JSON.stringify({mcqAnswers,sqlAnswers,codeAnswers}));}catch(e){}
+}
+
+// MCQ
+function selectMCQ(qid,idx,el){
+  if(!isRunning)return;
+  mcqAnswers[qid]=idx;
+  document.querySelectorAll(`[id^="opt-${qid}-"]`).forEach(l=>l.classList.remove('selected'));
+  el.classList.add('selected');
+  updateProgress();
+}
+
+// SQL
+function onSqlChange(qid){sqlAnswers[qid]=document.getElementById(`sql-${qid}`).value;updateProgress();}
+
+async function testSQL(qid){
+  const query=document.getElementById(`sql-${qid}`).value.trim();
+  const out=document.getElementById(`sql-out-${qid}`);
+  const stat=document.getElementById(`sql-stat-${qid}`);
+  if(!query){stat.textContent='Write a query first';return;}
+  stat.innerHTML='<span class="spin"></span>Running…';
+  out.classList.add('show');
+  out.innerHTML='<span style="color:#a9b1d6">Executing…</span>';
+  try{
+    const r=await fetch('/api/test_sql',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question_id:qid,query})});
+    const d=await r.json();
+    if(d.error){out.innerHTML=`<span style="color:#f87171">❌ ${esc(d.error)}</span>`;stat.textContent='Error';}
+    else{
+      const rows=d.output||[];const cols=d.cols||[];
+      let h=`<span style="color:#7dd3fc">${rows.length} row(s)</span><br/>`;
+      if(cols.length)h+=`<span style="color:#a78bfa">${cols.join(' | ')}</span><br/><span style="color:#374151">${'─'.repeat(30)}</span><br/>`;
+      rows.slice(0,25).forEach(row=>{h+=`<span style="color:#e2e8f0">${row.map(v=>esc(String(v))).join(' | ')}</span><br/>`;});
+      out.innerHTML=h;stat.textContent='✓ Ran';
+    }
+  }catch(e){out.innerHTML='<span style="color:#f87171">Network error</span>';stat.textContent='Error';}
+}
+
+// CODING
+function onLangChange(qid){
+  const lang=document.getElementById(`lang-${qid}`).value;
+  const editor=document.getElementById(`code-${qid}`);
+  const tpl=LANG_TPL[qid]?.[lang]||'';
+  if(!editor.value.trim()||confirm('Switch language? Template will replace current code.')){
+    editor.value=tpl;
+    codeAnswers[qid]={language:lang,code:tpl};
+    updateProgress();
+  }
+}
+function onCodeChange(qid){
+  const lang=document.getElementById(`lang-${qid}`).value;
+  codeAnswers[qid]={language:lang,code:document.getElementById(`code-${qid}`).value};
+  updateProgress();
+}
+
+async function runCode(qid){
+  const lang=document.getElementById(`lang-${qid}`).value;
+  const code=document.getElementById(`code-${qid}`).value;
+  const stdin=document.getElementById(`stdin-${qid}`).value;
+  const out=document.getElementById(`code-out-${qid}`);
+  const stat=document.getElementById(`code-stat-${qid}`);
+  if(!code.trim()){stat.textContent='No code';return;}
+  stat.innerHTML='<span class="spin"></span>Running…';
+  out.classList.add('show');out.innerHTML='<span style="color:#a9b1d6">Compiling…</span>';
+  codeAnswers[qid]={language:lang,code};updateProgress();
+  try{
+    const r=await fetch('/api/run_code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({language:lang,code,stdin})});
+    const d=await r.json();
+    let h='';
+    if(d.timed_out)h='<span style="color:#f87171">⏰ Time Limit Exceeded</span>';
+    else if(d.error)h=`<span class="err-blk">${esc(d.error)}</span>`;
+    else{
+      if(d.stderr)h+=`<span class="err-blk">${esc(d.stderr.substring(0,300))}</span>`;
+      h+=`<div class="stdout-blk">${esc(d.stdout)||'<span style="color:#555">(no output)</span>'}</div>`;
+    }
+    out.innerHTML=h;stat.textContent=d.error?'❌ Error':'✓ Done';
+  }catch(e){out.innerHTML='<span class="err-blk">Network error</span>';stat.textContent='Error';}
+}
+
+async function runTests(qid){
+  const lang=document.getElementById(`lang-${qid}`).value;
+  const code=document.getElementById(`code-${qid}`).value;
+  const out=document.getElementById(`code-out-${qid}`);
+  const stat=document.getElementById(`code-stat-${qid}`);
+  if(!code.trim()){stat.textContent='No code';return;}
+  stat.innerHTML='<span class="spin"></span>Testing…';
+  out.classList.add('show');out.innerHTML='<span style="color:#a9b1d6">Running all test cases…</span>';
+  codeAnswers[qid]={language:lang,code};updateProgress();
+  try{
+    const r=await fetch('/api/run_tests',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question_id:qid,language:lang,code})});
+    const d=await r.json();
+    const p=d.passed,t=d.total;
+    let h=`<span style="color:${p===t?'#6ee7b7':'#f87171'};font-weight:700">${p}/${t} test cases passed</span><br/><br/>`;
+    (d.test_results||[]).forEach((tc,i)=>{
+      h+=`<div class="tc-row"><span>${tc.passed?'✅':'❌'}</span><span class="${tc.passed?'tc-pass':'tc-fail'}">Test ${i+1}</span>`;
+      if(!tc.passed)h+=`<span style="color:#9ca3af;font-size:.67rem;margin-left:.3rem">Expected: ${esc(tc.expected)} | Got: ${esc(tc.actual||'(none)')}</span>`;
+      if(tc.timed_out)h+=`<span style="color:#f87171;font-size:.67rem;margin-left:.3rem"> TLE</span>`;
+      h+='</div>';
+      if(!tc.passed&&tc.error)h+=`<div class="err-blk" style="margin-left:1.2rem;font-size:.67rem">${esc(tc.error.substring(0,120))}</div>`;
+    });
+    out.innerHTML=h;stat.textContent=`${p}/${t} passed`;
+  }catch(e){out.innerHTML='<span class="err-blk">Network error</span>';stat.textContent='Error';}
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// ENROLMENT
+let _enrolStream=null;
+async function startEnrolment(){
+  // First try video+audio; fall back to audio-only; fall back to nothing
+  const constraints = [
+    {video:{width:640,height:480,facingMode:'user'},audio:true},
+    {video:true, audio:true},
+    {video:{facingMode:'user'}, audio:false},
+    {video:true, audio:false},
+  ];
+  for(const c of constraints){
+    try{
+      _enrolStream = await navigator.mediaDevices.getUserMedia(c);
+      const ev = document.getElementById('enrolVid');
+      ev.srcObject = _enrolStream;
+      ev.play().catch(()=>{});
+      document.getElementById('enrolStatus').textContent = 'Camera ready — align your face and click Capture';
+      try{ initAudio(_enrolStream); }catch(e){}
+      return;
+    }catch(e){}
+  }
+  // No camera at all
+  document.getElementById('enrolStatus').textContent = 'No camera detected — click Skip to continue without video proctoring';
+  document.getElementById('enrolBtn').style.display = 'none';
+}
+async function captureEnrolment(){
+  const btn=document.getElementById('enrolBtn');btn.disabled=true;btn.textContent='Capturing…';
+  const vid=document.getElementById('enrolVid'),cvs=document.getElementById('enrolCvs');
+  if(vid.videoWidth){
+    cvs.width=vid.videoWidth;cvs.height=vid.videoHeight;
+    const ctx=cvs.getContext('2d');ctx.save();ctx.scale(-1,1);ctx.drawImage(vid,-cvs.width,0,cvs.width,cvs.height);ctx.restore();
+    const b64=cvs.toDataURL('image/jpeg',.85);
+    try{await fetch('/api/enrol',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame:b64})});
+      document.getElementById('enrolBadge').textContent='✅ Registered';document.getElementById('enrolBadge').style.color='#6ee7b7';}catch(e){}
+  }
+  setTimeout(finishEnrolment,800);
+}
+function skipEnrolment(){setTimeout(finishEnrolment,300);}
+function finishEnrolment(){
+  document.getElementById('enrolOverlay').style.display='none';
+  const v=document.getElementById('liveVideo');
+  // Always assign the stream — regardless of whether srcObject is already set
+  if(_enrolStream){
+    v.srcObject=_enrolStream;
+    v.play().catch(()=>{});
+  }
+  // Hide "camera unavailable" placeholder, show video
+  document.getElementById('camNo').style.display='none';
+  v.style.display='block';
+  // Also connect audio analyser to shared stream
+  if(_enrolStream && !audioCtx){
+    try{ initAudio(_enrolStream); }catch(e){}
+  }
+  startDetectionLoop();
+  setTimeout(initSpeechToText, 2500);
+}
+
+// AUDIO
+let audioCtx=null,audioAnalyser=null,audioData=null;
+function initAudio(stream){
+  try{audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const s=audioCtx.createMediaStreamSource(stream);
+    audioAnalyser=audioCtx.createAnalyser();audioAnalyser.fftSize=256;
+    s.connect(audioAnalyser);audioData=new Uint8Array(audioAnalyser.frequencyBinCount);}catch(e){}
+}
+function getAudioLevels(){
+  if(!audioAnalyser||!audioData)return{rms:0,zcr:0,peak:0};
+  audioAnalyser.getByteTimeDomainData(audioData);
+  let ss=0,zcr=0,peak=0;
+  for(let i=0;i<audioData.length;i++){const v=(audioData[i]-128)/128;ss+=v*v;peak=Math.max(peak,Math.abs(v));
+    if(i>0&&Math.sign(audioData[i]-128)!==Math.sign(audioData[i-1]-128))zcr++;}
+  return{rms:Math.sqrt(ss/audioData.length),zcr:zcr/audioData.length,peak};
+}
+
+// STT
+let recognition = null;
+let _sttRunning  = false;
+
+function updateSttBar(text, status) {
+  const bar   = document.getElementById('sttBar');
+  const txtEl = document.getElementById('sttText');
+  const statEl= document.getElementById('sttStatus');
+  if (!bar) return;
+  if (text)   { txtEl.textContent  = text;   bar.classList.add('show'); }
+  if (status) { statEl.textContent = status; }
+}
+
+function initSpeechToText() {
+  if (_sttRunning) return;   // prevent double-init
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    console.warn('[STT] Not supported in this browser. Use Chrome or Edge.');
+    updateSttBar('Not supported — use Chrome/Edge', '✗');
+    return;
+  }
+
+  // Resume AudioContext (browsers suspend until user gesture)
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+
+  try {
+    if (recognition) {
+      try { recognition.onend = null; recognition.stop(); } catch(e) {}
+    }
+
+    recognition = new SR();
+    recognition.continuous      = true;
+    recognition.interimResults  = true;
+    recognition.lang            = 'en-US';
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      _sttRunning = true;
+      updateSttBar(null, '🟢 listening');
+      document.getElementById('sttBar').classList.add('show');
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      console.log('[STT] Active');
+    };
+
+    recognition.onresult = async (e) => {
+      let finalText = '', interimText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText   += e.results[i][0].transcript + ' ';
+        else                      interimText += e.results[i][0].transcript;
+      }
+
+      const display = (finalText || interimText).trim();
+      if (display) {
+        // Show in bottom bar
+        updateSttBar('"' + display.substring(0, 80) + (display.length > 80 ? '…' : '') + '"', null);
+        // Show in violation log
+        addViolLog('voice', '🔊 Speech: "' + display.substring(0, 50) + (display.length > 50 ? '…' : '') + '"');
+        // Capture screenshot of the speaking moment
+        captureScreenshot('voice_speech');
+      }
+
+      if (finalText.trim()) {
+        // Clear bar after 3 seconds
+        setTimeout(() => updateSttBar('— listening for speech —', null), 3000);
+        // Save to server
+        try {
+          await fetch('/api/transcript', {
+            method:  'POST',
+            headers: {'Content-Type': 'application/json'},
+            body:    JSON.stringify({text: finalText.trim()})
+          });
+        } catch (x) {}
+      }
+    };
+
+    recognition.onerror = (e) => {
+      _sttRunning = false;
+      if (e.error === 'no-speech')   { return; }
+      if (e.error === 'aborted')     { return; }
+      if (e.error === 'not-allowed') {
+        updateSttBar('Microphone blocked — allow mic in browser', '⛔');
+        console.warn('[STT] Mic not allowed');
+        return;
+      }
+      if (e.error === 'audio-capture') {
+        updateSttBar('No microphone found', '⛔');
+        return;
+      }
+      console.warn('[STT] Error:', e.error);
+      updateSttBar(null, '⚠ ' + e.error);
+    };
+
+    recognition.onend = () => {
+      _sttRunning = false;
+      updateSttBar(null, '⏸ restarting…');
+      if (isRunning) {
+        setTimeout(() => {
+          if (!_sttRunning && isRunning) initSpeechToText();
+        }, 600);
+      }
+    };
+
+    recognition.start();
+    console.log('[STT] Started');
+  } catch (e) {
+    _sttRunning = false;
+    console.error('[STT] Init failed:', e);
+    updateSttBar('STT init failed: ' + e.message, '✗');
+  }
+}
+
+function stopSpeechToText() {
+  _sttRunning = false;
+  try {
+    if (recognition) {
+      recognition.onend = null;
+      recognition.onerror = null;
+      recognition.stop();
+    }
+  } catch(e) {}
+  const bar = document.getElementById('sttBar');
+  if (bar) bar.classList.remove('show');
+}
+
+// DETECTION
+async function startDetectionLoop(){
+  const video=document.getElementById('liveVideo'),canvas=document.getElementById('camCanvas'),ctx=canvas.getContext('2d');
+  // Offscreen canvas — used to compose violation screenshots with bounding boxes
+  const offscreen = document.createElement('canvas');
+  const offCtx    = offscreen.getContext('2d');
+  let   lastFrameDataUrl = null;  // the raw frame that was sent to server
+
+  async function loop(){
+    if(!isRunning)return;
+    if(!video.videoWidth){detectLoop=setTimeout(loop,500);return;}
+
+    // ── Draw current video frame onto canvas ───────────────────────────────
+    canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+    ctx.save(); ctx.scale(-1,1); ctx.drawImage(video,-canvas.width,0,canvas.width,canvas.height); ctx.restore();
+
+    // ── Capture the CLEAN frame (no boxes) BEFORE sending to server ────────
+    // This is the exact frame the server will analyse — we keep it for the screenshot
+    lastFrameDataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    const b64 = lastFrameDataUrl.split(',')[1];
+
+    const {rms,zcr,peak}=getAudioLevels();
+    try{
+      const r=await fetch('/api/detect_frame',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({frame:b64,audio_rms:rms,audio_zcr:zcr,audio_peak:peak})});
+      const d=await r.json();
+      processDetection(d, canvas, ctx, offscreen, offCtx, lastFrameDataUrl);
+    }catch(e){}
+    detectLoop=setTimeout(loop,1000);
+  }
+  detectLoop=setTimeout(loop,1000);
+}
+function processDetection(d, canvas, ctx, offscreen, offCtx, rawFrameDataUrl){
+  if(d.phone_count!==undefined)vcPh=d.phone_count;
+  if(d.multi_count!==undefined)vcMu=d.multi_count;
+  if(d.face_count!==undefined)vcFa=d.face_count;
+  updateVC();
+
+  // ── Draw boxes on the LIVE canvas (shown to student) ─────────────────────
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  (d.phone_boxes||[]).forEach(b=>drawBox(ctx,canvas,b,'#dc2626','PHONE'));
+  (d.person_boxes||[]).forEach((b,i)=>drawBox(ctx,canvas,b,i===0?'#16a34a':'#ea580c',i===0?'You':'Person '+(i+1)));
+
+  // ── On violation: build evidence screenshot IMMEDIATELY ───────────────────
+  // Composite: raw frame (exact moment of violation) + bounding boxes drawn on top
+  // This is done synchronously before anything else can overwrite the canvas
+  const hasViolation = d.phone_alert || d.multi_alert || d.face_mismatch;
+  if(hasViolation && rawFrameDataUrl && offscreen){
+    offscreen.width  = canvas.width;
+    offscreen.height = canvas.height;
+    // 1. Draw the raw violation frame as background
+    const img = new Image();
+    img.onload = () => {
+      offCtx.drawImage(img, 0, 0);
+      // 2. Draw all bounding boxes on top
+      (d.phone_boxes||[]).forEach(b=>drawBox(offCtx,offscreen,b,'#dc2626','PHONE'));
+      (d.person_boxes||[]).forEach((b,i)=>drawBox(offCtx,offscreen,b,i===0?'#16a34a':'#ea580c',i===0?'You':'Person '+(i+1)));
+      // 3. Add violation label stamp
+      const label = d.phone_alert?'PHONE DETECTED':d.multi_alert?'MULTIPLE PERSONS':'FACE MISMATCH';
+      const color = d.phone_alert?'#dc2626':d.multi_alert?'#ea580c':'#7c3aed';
+      offCtx.fillStyle = color;
+      offCtx.fillRect(0, 0, offscreen.width, 32);
+      offCtx.fillStyle = '#fff';
+      offCtx.font = 'bold 15px Arial,sans-serif';
+      offCtx.fillText('⚠ ' + label + '  ' + new Date().toLocaleTimeString(), 8, 22);
+      // 4. Capture and send
+      const reason = d.phone_alert?'phone':d.multi_alert?'multi_person':'face_mismatch';
+      captureScreenshot(reason, offscreen.toDataURL('image/jpeg', 0.92));
+    };
+    img.src = rawFrameDataUrl;
+  }
+
+  setBadge('badge-phone-c',d.phone_alert,'📵 Phone!','📵 No Phone');
+  setBadge('badge-person-c',d.multi_alert,'👥 Multi!','👤 1 Person');
+  setBadge('badge-face-c',d.face_mismatch,'🪪 Mismatch!','🪪 Match');
+  const fl=document.getElementById('violFlash');
+  fl.className='vflash'+(d.phone_alert?' phone-viol':d.multi_alert?' multi-viol':d.face_mismatch?' face-viol':'');
+  if(d.phone_alert)  addViolLog('phone','📵 Phone detected');
+  if(d.multi_alert)  addViolLog('multi','👥 Multiple persons');
+  if(d.face_mismatch)addViolLog('face','🪪 Face mismatch');
+  if(d.voice_alert){
+    addViolLog('voice','🔊 Voice/Speech detected by audio analysis');
+    captureScreenshot('voice_alert');
+  }
+  if(d.terminate)handleTermination(d);
+}
+function drawBox(ctx,cvs,b,col,lbl){
+  const W=cvs.width,H=cvs.height;
+  ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.strokeRect(b[0]*W,b[1]*H,(b[2]-b[0])*W,(b[3]-b[1])*H);
+  ctx.fillStyle=col;ctx.fillRect(b[0]*W,b[1]*H-17,(b[2]-b[0])*W,17);
+  ctx.fillStyle='#fff';ctx.font='bold 10px DM Sans,sans-serif';ctx.fillText(lbl,b[0]*W+3,b[1]*H-4);
+}
+function setBadge(id,bad,badTxt,okTxt){const el=document.getElementById(id);el.textContent=bad?badTxt:okTxt;el.className='cbadge '+(bad?'b-warn':'b-ok');}
+function updateVC(){
+  const set=(id,val,lim)=>{document.getElementById(`vv-${id}`).textContent=val;document.getElementById(`vci-${id}`).classList.toggle('hit',val>=lim);};
+  set('ph',vcPh,3);set('mu',vcMu,3);set('fa',vcFa,3);set('ta',vcTa,2);
+}
+function addViolLog(type,msg){
+  const el=document.getElementById('violLog');
+  const d=document.createElement('div');d.className=`vlog-entry vlog-${type}`;
+  d.textContent=`${new Date().toLocaleTimeString()} — ${msg}`;
+  el.insertBefore(d,el.firstChild);if(el.children.length>25)el.removeChild(el.lastChild);
+}
+function handleTermination(d){
+  isRunning=false;clearInterval(timerInterval);if(detectLoop)clearTimeout(detectLoop);stopSpeechToText();
+  document.getElementById('toReason').textContent=d.terminate_reason||'Exam terminated.';
+  document.getElementById('to-phone').textContent=vcPh;document.getElementById('to-multi').textContent=vcMu;
+  document.getElementById('to-face').textContent=vcFa;document.getElementById('to-tab').textContent=vcTa;
+  captureScreenshot('termination');
+  fetch('/exam/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getPayload())}).catch(()=>{});
+  setTimeout(()=>document.getElementById('terminateOverlay').classList.add('show'),2000);
+}
+
+// SCREENSHOTS
+let lastSS={};   // track cooldown per reason type
+const SS_COOLDOWN={phone:10000,multi:12000,face:12000,voice:15000,tab:0,termination:0,final_submission:0};
+
+function captureScreenshot(reason, preRenderedDataUrl){
+  const now = Date.now();
+  const cooldown = SS_COOLDOWN[reason] !== undefined ? SS_COOLDOWN[reason] : 10000;
+  if(cooldown > 0 && lastSS[reason] && (now - lastSS[reason]) < cooldown) return;
+  lastSS[reason] = now;
+
+  let dataUrl = preRenderedDataUrl || null;
+
+  // If no pre-rendered image provided, fall back to current canvas or video
+  if(!dataUrl){
+    const canvas = document.getElementById('camCanvas');
+    const video  = document.getElementById('liveVideo');
+    if(canvas && canvas.width > 10 && canvas.height > 10){
+      dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+    } else if(video && video.videoWidth > 0){
+      const tmp = document.createElement('canvas');
+      tmp.width = video.videoWidth; tmp.height = video.videoHeight;
+      const tCtx = tmp.getContext('2d');
+      tCtx.save(); tCtx.scale(-1,1); tCtx.drawImage(video,-tmp.width,0,tmp.width,tmp.height); tCtx.restore();
+      dataUrl = tmp.toDataURL('image/jpeg', 0.92);
+    }
+  }
+
+  if(!dataUrl) return;
+  const b64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+  fetch('/api/screenshot',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({frame: b64, reason: reason})
+  }).catch(()=>{});
+}
+
+// SUBMIT
+function getPayload(){return{answers:mcqAnswers,sql_answers:sqlAnswers,code_answers:codeAnswers};}
+function confirmSubmit(){updateProgress();document.getElementById('submitModal').classList.add('show');}
+function closeModal(){document.getElementById('submitModal').classList.remove('show');}
+async function doSubmit(auto=false){
+  if(_submitting)return;_submitting=true;
+  isRunning=false;clearInterval(timerInterval);if(detectLoop)clearTimeout(detectLoop);
+  stopSpeechToText();captureScreenshot('final_submission');
+  try{sessionStorage.removeItem('examState');}catch(e){}
+  try{const r=await fetch('/exam/submit',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getPayload())});
+    const d=await r.json();if(d.redirect)window.location.href=d.redirect;}
+  catch(e){_submitting=false;}
+}
+
+// RESTORE
+function restoreState(){
+  try{const sv=JSON.parse(sessionStorage.getItem('examState')||'{}');
+    if(sv.mcqAnswers)Object.entries(sv.mcqAnswers).forEach(([q,i])=>{mcqAnswers[q]=i;const l=document.getElementById(`opt-${q}-${i}`);if(l)l.classList.add('selected');});
+    if(sv.sqlAnswers)Object.entries(sv.sqlAnswers).forEach(([q,s])=>{sqlAnswers[q]=s;const el=document.getElementById(`sql-${q}`);if(el)el.value=s;});
+    if(sv.codeAnswers)Object.entries(sv.codeAnswers).forEach(([q,s])=>{codeAnswers[q]=s;const el=document.getElementById(`code-${q}`);if(el&&s.code)el.value=s.code;const sl=document.getElementById(`lang-${q}`);if(sl&&s.language)sl.value=s.language;});
+    updateProgress();}catch(e){}
+}
+// Resume AudioContext on any user interaction
+document.addEventListener('click', () => {
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+}, {passive: true});
+
+// ── FULLSCREEN ────────────────────────────────────────────────────────────────
+function enterFullscreen() {
+  _enteringFullscreen = true;
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen ||
+              el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    req.call(el).then(() => {
+      document.getElementById('fsPrompt').style.display = 'none';
+      startEnrolment();
+    }).catch(err => {
+      // Fullscreen blocked (iframe / browser setting) — continue anyway
+      console.warn('[FS] Fullscreen not allowed:', err);
+      document.getElementById('fsPrompt').style.display = 'none';
+      startEnrolment();
+    });
+  } else {
+    document.getElementById('fsPrompt').style.display = 'none';
+    startEnrolment();
+  }
+}
+
+function reenterFullscreen() {
+  if (!document.fullscreenElement && isRunning) {
+    _enteringFullscreen = true;
+    const el  = document.documentElement;
+    const req = el.requestFullscreen || el.webkitRequestFullscreen || el.msRequestFullscreen;
+    if (req) req.call(el).catch(() => {});
+  }
+}
+
+window.addEventListener('load', () => {
+  startTimer();
+  restoreState();
+  // Show fullscreen prompt first — exam starts after user clicks "Enter Full Screen"
+  // (do NOT call startEnrolment here — fullscreen button calls it)
+});
+</script>
+</body>
+</html>

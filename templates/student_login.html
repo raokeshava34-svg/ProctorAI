@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Online Assessment — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--blue:#2563eb;--dark:#1e3a8a;--bg:#f4f6f9;--text:#1a2332;--muted:#6b7280;--border:#d1d9e0;--red:#dc2626;--green:#16a34a}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);min-height:100vh;display:flex;flex-direction:column}
+header{background:white;border-bottom:1px solid var(--border);padding:0 2rem;height:56px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+header h1{font-size:1rem;font-weight:700;color:var(--text)}
+header span{font-size:.78rem;color:var(--muted);margin-left:1rem;padding-left:1rem;border-left:1px solid var(--border)}
+main{flex:1;display:flex;align-items:center;justify-content:center;padding:2rem 1rem}
+.card{background:white;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,.09);width:100%;max-width:460px;overflow:hidden}
+.card-top{background:linear-gradient(135deg,var(--dark),var(--blue));padding:2.2rem;color:white;text-align:center}
+.card-top h2{font-size:1.35rem;font-weight:700;margin-bottom:.35rem}
+.card-top p{opacity:.75;font-size:.84rem}
+.card-body{padding:1.8rem}
+.rules{background:#f0f5ff;border:1px solid #c7d7fc;border-radius:9px;padding:1rem 1.1rem;margin-bottom:1.5rem}
+.rules h3{font-size:.72rem;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:.07em;margin-bottom:.55rem}
+.rule-item{display:flex;align-items:flex-start;gap:.6rem;font-size:.8rem;color:var(--muted);margin-bottom:.4rem}
+.rule-icon{flex-shrink:0;font-size:.82rem}
+/* limits strip */
+.limits-strip{display:flex;gap:.5rem;margin-bottom:1.3rem;flex-wrap:wrap}
+.limit-pill{flex:1;min-width:90px;background:#fff8ed;border:1.5px solid #fcd34d;border-radius:7px;padding:.4rem .6rem;text-align:center}
+.limit-pill .lp-val{font-size:.95rem;font-weight:700;color:#92400e;font-family:'DM Mono',monospace}
+.limit-pill .lp-lbl{font-size:.6rem;color:#b45309;text-transform:uppercase;letter-spacing:.06em}
+.field{margin-bottom:1.1rem}
+.field label{display:block;font-size:.8rem;font-weight:600;color:var(--text);margin-bottom:.35rem}
+.field input{width:100%;border:1.5px solid var(--border);border-radius:7px;padding:.72rem .9rem;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--text);background:#fafcff;transition:border-color .2s}
+.field input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+.err{font-size:.78rem;color:var(--red);margin-top:.3rem;display:none}
+.btn{width:100%;padding:.82rem;background:var(--blue);color:white;border:none;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:600;cursor:pointer;transition:all .2s;margin-top:.3rem}
+.btn:hover{background:var(--dark)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+footer{text-align:center;padding:.8rem;font-size:.73rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>📋 Online Assessment</h1>
+  <span>Proctored · AI-Monitored</span>
+</header>
+<main>
+  <div class="card">
+    <div class="card-top">
+      <div style="font-size:2rem;margin-bottom:.5rem">🎓</div>
+      <h2>Begin Your Exam</h2>
+      <p>Enter your details to start the AI-proctored session</p>
+    </div>
+    <div class="card-body">
+      <div class="rules">
+        <h3>Before You Begin</h3>
+        <div class="rule-item"><span class="rule-icon">📷</span><span>Enable your webcam — it will be monitored throughout the exam</span></div>
+        <div class="rule-item"><span class="rule-icon">📵</span><span>Do <strong>not</strong> use a mobile phone — detected 3 times → exam terminated</span></div>
+        <div class="rule-item"><span class="rule-icon">👤</span><span>Only one person must be visible — 3 detections → terminated</span></div>
+        <div class="rule-item"><span class="rule-icon">🔀</span><span>Do <strong>not</strong> switch browser tabs — 2 switches → terminated</span></div>
+        <div class="rule-item"><span class="rule-icon">🤫</span><span>Remain silent — speech is transcribed and recorded</span></div>
+        <div class="rule-item"><span class="rule-icon">⏱</span><span>Duration: 30 minutes — auto-submits on timeout</span></div>
+      </div>
+      <div class="limits-strip">
+        <div class="limit-pill"><div class="lp-val">3×</div><div class="lp-lbl">📵 Phone limit</div></div>
+        <div class="limit-pill"><div class="lp-val">3×</div><div class="lp-lbl">👥 Multi-person</div></div>
+        <div class="limit-pill"><div class="lp-val">3×</div><div class="lp-lbl">🪪 Face mismatch</div></div>
+        <div class="limit-pill"><div class="lp-val">2×</div><div class="lp-lbl">🔀 Tab switch</div></div>
+      </div>
+      <div class="field">
+        <label>Full Name / Username</label>
+        <input type="text" id="username" placeholder="e.g. John Doe" autocomplete="off"/>
+        <div class="err" id="err-u">Please enter your name</div>
+      </div>
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" id="email" placeholder="e.g. john@example.com"/>
+        <div class="err" id="err-e">Please enter a valid email</div>
+      </div>
+      <button class="btn" id="startBtn" onclick="startExam()">Start Exam →</button>
+    </div>
+  </div>
+</main>
+<footer>Cognizant ProctorAI v6 · Secure Proctored Assessment System</footer>
+<script>
+async function startExam(){
+  const u=document.getElementById('username').value.trim();
+  const e=document.getElementById('email').value.trim();
+  document.getElementById('err-u').style.display='none';
+  document.getElementById('err-e').style.display='none';
+  if(!u){document.getElementById('err-u').style.display='block';return;}
+  if(!e||!e.includes('@')){document.getElementById('err-e').style.display='block';return;}
+  const btn=document.getElementById('startBtn');
+  btn.disabled=true;btn.textContent='Starting…';
+  const res=await fetch('/student/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,email:e})});
+  const d=await res.json();
+  if(d.redirect)window.location.href=d.redirect;
+  else{btn.disabled=false;btn.textContent='Start Exam →';alert(d.error||'Error');}
+}
+document.addEventListener('keydown',e=>{if(e.key==='Enter')startExam();});
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# ProctorAI v6 — Full Requirements
+# Install: pip install -r requirements.txt
+
+# Core web framework
+flask>=3.0.0
+werkzeug>=3.0.0
+
+# Deep Learning — CNN (cnn_phone.h5)
+tensorflow>=2.15.0
+
+# Computer Vision
+opencv-python>=4.9.0
+
+# YOLOv8 — phone + person detection
+ultralytics>=8.2.0
+
+# Machine Learning — RandomForest ensemble
+scikit-learn>=1.4.0
+
+# Data handling
+numpy>=1.26.0
+pandas>=2.2.0
+
+# Plotting (training dashboard)
+matplotlib>=3.8.0
+
+# Excel export
+openpyxl>=3.1.0
+
+# Utility
+pillow>=10.0.0
